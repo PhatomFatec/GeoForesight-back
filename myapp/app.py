@@ -68,17 +68,17 @@ class Operacao_credito_estadual(db.Model):
     data_liberacao = db.Column(db.Date)
     data_vencimento = db.Column(db.Date)
     idCiclo = db.Column(db.Integer, db.ForeignKey('ciclo_producao.idCiclo'))
-    idClima = db.Column(db.Integer, db.ForeignKey('clima.idClima'))
-    idEvento = db.Column(db.Integer, db.ForeignKey('evento_climatico.idEvento'))
+    # idClima = db.Column(db.Integer, db.ForeignKey('clima.idClima'))
+    # idEvento = db.Column(db.Integer, db.ForeignKey('evento_climatico.idEvento'))
     idGrao = db.Column(db.Integer, db.ForeignKey('grao.idGrao'))
-    idSolo = db.Column(db.Integer, db.ForeignKey('solo.idSolo'))
+    # idSolo = db.Column(db.Integer, db.ForeignKey('solo.idSolo'))
     idIrrigacao = db.Column(db.Integer, db.ForeignKey('irrigacao.idIrrigacao'))
 
-    # relacionamento com Glebas
+    # Crie um relacionamento com Glebas
     gleba_ref_bacen = db.Column(db.Integer, db.ForeignKey('glebas.ref_bacen'))
     gleba_nu_ordem = db.Column(db.Integer, db.ForeignKey('glebas.nu_ordem'))
 
-    # propriedade que representa o relacionamento
+    # Adicione uma propriedade que representa o relacionamento
     gleba = db.relationship('Glebas', back_populates='operacao')
 
 
