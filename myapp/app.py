@@ -57,6 +57,7 @@ class Produtos(db.Model):
     descricao = db.Column(db.String(30))
     Empreendimento = db.Relationship('Empreendimento',backref='produtos')
 
+
 class Operacao_credito_estadual(db.Model):
     ref_bacen = db.Column(db.Integer, primary_key=True)
     nu_ordem = db.Column(db.Integer, primary_key=True)
@@ -73,22 +74,26 @@ class Operacao_credito_estadual(db.Model):
     idSolo = db.Column(db.Integer, db.ForeignKey('solo.idSolo'))
     idIrrigacao = db.Column(db.Integer, db.ForeignKey('irrigacao.idIrrigacao'))
 
-    gleba = db.relationship('Glebas', back_populates='operacao', uselist=False)
-    
+    # relacionamento com Glebas
+    gleba_ref_bacen = db.Column(db.Integer, db.ForeignKey('glebas.ref_bacen'))
+    gleba_nu_ordem = db.Column(db.Integer, db.ForeignKey('glebas.nu_ordem'))
+
+    # propriedade que representa o relacionamento
+    gleba = db.relationship('Glebas', back_populates='operacao')
+
 
 
 
 class Glebas(db.Model):
     idGleba = db.Column(db.Integer, primary_key=True)
-    ref_bacen = db.Column(db.Integer, primary_key=True)
-    nu_ordem = db.Column(db.Integer, primary_key=True)
+    ref_bacen = db.Column(db.Integer, primary_key=True, unique=True)
+    nu_ordem = db.Column(db.Integer, primary_key=True, unique=True)
     coordenadas = db.Column(Geography(geometry_type='POINT', srid=4326))
     altitude = db.Column(db.Double)
     nu_ponto = db.Column(db.Integer)
 
-    operacao = db.relationship('Operacao_credito_estadual', back_populates='gleba')
-
-
+    peracao = db.relationship('Operacao_credito_estadual', back_populates='gleba')
+    
 
 class Empreendimento(db.Model):
     idEmpreendimento = db.Column(db.Integer, primary_key=True)
@@ -96,6 +101,7 @@ class Empreendimento(db.Model):
     cesta = db.Column(db.String(30))
     modalidade = db.Column(db.String(30))
     idProduto = db.Column(db.Integer, db.ForeignKey('produtos.idProduto'))
+
 
 
 
