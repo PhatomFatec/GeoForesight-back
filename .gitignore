@@ -1,5 +1,6 @@
 ### you can find this doc at the following link: https://github.com/salsita/flask-config/blob/master/.gitignore
 
+**.gitpod.yml
 
 **api/
 
