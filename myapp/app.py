@@ -2,11 +2,12 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from geoalchemy2 import Geography
 import requests
+from sqlalchemy import create_engine, text
 
 app = Flask(__name__)
 
 # Configurações do banco de dados PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:A@996739786@localhost/geoforesight'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:dexter@localhost/GeoDb'
 db = SQLAlchemy(app)
 
 # Defina o modelo para a tabela "table"
@@ -146,8 +147,8 @@ def obter_ciclo_producao(id):
     except Exception as e:
         return jsonify({"mensagem": "Erro interno do servidor"}), 500
     
-@app.route('/consulta/<int:ref_bacen>/<int:nu_ordem>/<string:coordenadas>/<int:altitude>/<string:inicio_plantio>/<string:final_plantio>/<string:inicio_colheita>/<string:final_colheita>/<string:descricao_grao>/<string:descricao_producao>/<string:descricao_irrigacao>', methods=['GET'])
-def consulta_dinamica(ref_bacen, nu_ordem, coordenadas, altitude, inicio_plantio, final_plantio, inicio_colheita, final_colheita, descricao_grao, descricao_producao, descricao_irrigacao):
+@app.route('/consulta/<int:ref_bacen>', methods=['GET'])
+def consulta_dinamica(ref_bacen, nu_ordem:2, coordenadas:2, altitude:2, inicio_plantio:2, final_plantio:2, inicio_colheita:2, final_colheita:2, descricao_grao:2, descricao_producao:2, descricao_irrigacao:2):
     
     try:
         
@@ -163,30 +164,61 @@ def consulta_dinamica(ref_bacen, nu_ordem, coordenadas, altitude, inicio_plantio
                                         '''
         
             if ref_bacen != "NULL":
-                query += f''' and ref_bacen = {ref_bacen}'''
+                query += f'''glebas.ref_bacen = {ref_bacen}'''
             if nu_ordem != "NULL":
-                query += f''' and ref_bacen = {ref_bacen}'''
+                query += f''' and glebas.nu_ordem = {nu_ordem}'''
             if coordenadas != "NULL":
-                query += f''' and ref_bacen = {ref_bacen}'''
+                query += f''' and glebas.coordenadas = {coordenadas}'''
             if altitude != "NULL":
-                query += f''' and ref_bacen = {ref_bacen}'''
+                query += f''' and glebas.altitude = {altitude}'''
             if inicio_plantio != "NULL":
-                query += f''' and ref_bacen = {ref_bacen}'''
+                query += f''' and operacao_credito_estadual.inicio_plantio = {inicio_plantio}'''
             if final_plantio != "NULL":
-                query += f''' and ref_bacen = {ref_bacen}'''
+                query += f''' and operacao_credito_estadual.final_plantio = {final_plantio}'''
             if inicio_colheita != "NULL":
-                query += f''' and ref_bacen = {ref_bacen}'''   
+                query += f''' and operacao_credito_estadual.inicio_colheita = {inicio_colheita}'''   
             if final_colheita != "NULL":
-                query += f''' and ref_bacen = {ref_bacen}'''
+                query += f''' and operacao_credito_estadual.final_colheita = {final_colheita}'''
                 
             if descricao_grao != "NULL":
-                query += f''' and ref_bacen = {ref_bacen}'''
+                query += f''' and grao.descricao_grao = {descricao_grao}'''
                 
             if descricao_producao != "NULL":
-                query += f''' and ref_bacen = {ref_bacen}'''
+                query += f''' and ciclo_producao.descricao_producao = {descricao_producao}'''
                 
             if descricao_irrigacao != "NULL":
-                query += f''' and ref_bacen = {ref_bacen}'''
+                query += f''' and irrigacao.descricao_irrigacao = {descricao_irrigacao}'''
+
+            # Criar uma conexão com o banco de dados
+            engine = create_engine('postgresql://postgres:dexter@localhost:5432/GeoDb')  # Substitua pela sua string de conexão
+            conn = engine.connect()
+
+            # Executar a query
+            resultados = conn.execute(text(query)).fetchall()
+
+            # Montar a lista de resultados
+            lista_resultados = []
+            for resultado in resultados:
+                resultado_dict = {
+                    "ref_bacen": resultado[0],
+                    "nu_ordem": resultado[1],
+                    "coordenadas": resultado[2],
+                    "inicio_plantio": resultado[3],
+                    "final_plantio": resultado[4],
+                    "data_liberacao": resultado[5],
+                    "data_vencimento": resultado[6],
+                    "inicio_colheita": resultado[7],
+                    "final_colheita": resultado[8],
+                    "descricao_irrigacao": resultado[9],
+                    "descricao_ciclo": resultado[10],
+                    "nome_produto": resultado[11]
+                }
+                lista_resultados.append(resultado_dict)
+            
+            # Fechar a conexão
+            conn.close()
+
+            return jsonify(lista_resultados), 200
 
     except Exception as e:
         # Tratamento de erro: retorna uma mensagem de erro genérica em caso de exceção
