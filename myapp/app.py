@@ -147,78 +147,89 @@ def obter_ciclo_producao(id):
     except Exception as e:
         return jsonify({"mensagem": "Erro interno do servidor"}), 500
     
-@app.route('/consulta/<int:ref_bacen>', methods=['GET'])
-def consulta_dinamica(ref_bacen, nu_ordem:2, coordenadas:2, altitude:2, inicio_plantio:2, final_plantio:2, inicio_colheita:2, final_colheita:2, descricao_grao:2, descricao_producao:2, descricao_irrigacao:2):
+@app.route('/consulta', methods=['GET'])
+def consulta_dinamica(ref_bacen="NULL", nu_ordem="NULL", coordenadas="NULL", altitude="NULL", inicio_plantio="NULL", final_plantio="NULL", inicio_colheita="NULL", final_colheita="NULL", descricao_grao="NULL", descricao_producao="NULL", descricao_irrigacao="NULL"):
     
     try:
         
-            query = ''' select glebas.ref_bacen, glebas.nu_ordem, glebas.coordenadas, operacao_credito_estadual.inicio_plantio, operacao_credito_estadual.final_plantio, operacao_credito_estadual.data_liberacao, operacao_credito_estadual.data_vencimento,
-                                            operacao_credito_estadual.inicio_colheita, operacao_credito_estadual.final_colheita, irrigacao.descricao, ciclo_producao.descricao, produtos.nome
-                                            from glebas
-                                            join operacao_credito_estadual on glebas.ref_bacen = operacao_credito_estadual.ref_bacen
-                                            join irrigacao on irrigacao.idirrigacao = operacao_credito_estadual.idirrigacao
-                                            join ciclo_producao on ciclo_producao.idciclo = operacao_credito_estadual.idciclo
-                                            join empreendimento on empreendimento.idteste = operacao_credito_estadual.idempreendimento
-                                            join produtos on produtos.idproduto = empreendimento.idproduto
-                                            where 1
-                                        '''
-        
-            if ref_bacen != "NULL":
-                query += f'''glebas.ref_bacen = {ref_bacen}'''
-            if nu_ordem != "NULL":
-                query += f''' and glebas.nu_ordem = {nu_ordem}'''
-            if coordenadas != "NULL":
-                query += f''' and glebas.coordenadas = {coordenadas}'''
-            if altitude != "NULL":
-                query += f''' and glebas.altitude = {altitude}'''
-            if inicio_plantio != "NULL":
-                query += f''' and operacao_credito_estadual.inicio_plantio = {inicio_plantio}'''
-            if final_plantio != "NULL":
-                query += f''' and operacao_credito_estadual.final_plantio = {final_plantio}'''
-            if inicio_colheita != "NULL":
-                query += f''' and operacao_credito_estadual.inicio_colheita = {inicio_colheita}'''   
-            if final_colheita != "NULL":
-                query += f''' and operacao_credito_estadual.final_colheita = {final_colheita}'''
-                
-            if descricao_grao != "NULL":
-                query += f''' and grao.descricao_grao = {descricao_grao}'''
-                
-            if descricao_producao != "NULL":
-                query += f''' and ciclo_producao.descricao_producao = {descricao_producao}'''
-                
-            if descricao_irrigacao != "NULL":
-                query += f''' and irrigacao.descricao_irrigacao = {descricao_irrigacao}'''
-
-            # Criar uma conexão com o banco de dados
-            engine = create_engine('postgresql://postgres:dexter@localhost:5432/GeoDb')  # Substitua pela sua string de conexão
-            conn = engine.connect()
-
-            # Executar a query
-            resultados = conn.execute(text(query)).fetchall()
-
-            # Montar a lista de resultados
-            lista_resultados = []
-            for resultado in resultados:
-                resultado_dict = {
-                    "ref_bacen": resultado[0],
-                    "nu_ordem": resultado[1],
-                    "coordenadas": resultado[2],
-                    "inicio_plantio": resultado[3],
-                    "final_plantio": resultado[4],
-                    "data_liberacao": resultado[5],
-                    "data_vencimento": resultado[6],
-                    "inicio_colheita": resultado[7],
-                    "final_colheita": resultado[8],
-                    "descricao_irrigacao": resultado[9],
-                    "descricao_ciclo": resultado[10],
-                    "nome_produto": resultado[11]
-                }
-                lista_resultados.append(resultado_dict)
+        query = ''' SELECT 
+            glebas.ref_bacen,
+            glebas.nu_ordem,
+            glebas.coordenadas,
+            operacao_credito_estadual.inicio_plantio,
+            operacao_credito_estadual.final_plantio,
+            operacao_credito_estadual.data_liberacao,
+            operacao_credito_estadual.data_vencimento,
+            operacao_credito_estadual.inicio_colheita,
+            operacao_credito_estadual.final_colheita,
+            irrigacao.descricao as desc_irrigacao,
+            ciclo_producao.descricao as descricao_ciclo
+            FROM 
+            glebas
+            JOIN 
+                operacao_credito_estadual ON glebas.ref_bacen = operacao_credito_estadual.ref_bacen
+            JOIN 
+                irrigacao ON irrigacao.idirrigacao = operacao_credito_estadual.idirrigacao
+            JOIN 
+                ciclo_producao ON ciclo_producao.idciclo = operacao_credito_estadual.idciclo
+            WHERE 
+                1=1 '''
             
-            # Fechar a conexão
-            conn.close()
+        if ref_bacen != "NULL":
+            query += f'''AND glebas.ref_bacen = {ref_bacen}'''
+        if nu_ordem != "NULL":
+            query += f'''AND  and glebas.nu_ordem = {nu_ordem}'''
+        if coordenadas != "NULL":
+            query += f'''AND  and glebas.coordenadas = {coordenadas}'''
+        if altitude != "NULL":
+            query += f'''AND  and glebas.altitude = {altitude}'''
+        if inicio_plantio != "NULL":
+            query += f'''AND  and operacao_credito_estadual.inicio_plantio = {inicio_plantio}'''
+        if final_plantio != "NULL":
+            query += f'''AND  and operacao_credito_estadual.final_plantio = {final_plantio}'''
+        if inicio_colheita != "NULL":
+            query += f'''AND  and operacao_credito_estadual.inicio_colheita = {inicio_colheita}'''   
+        if final_colheita != "NULL":
+            query += f'''AND  and operacao_credito_estadual.final_colheita = {final_colheita}'''
+            
+        if descricao_grao != "NULL":
+            query += f'''AND  and grao.descricao_grao = {descricao_grao}'''
+            
+        if descricao_producao != "NULL":
+            query += f'''AND  and ciclo_producao.descricao_producao = {descricao_producao}'''
+            
+        if descricao_irrigacao != "NULL":
+            query += f'''AND  and irrigacao.descricao_irrigacao = {descricao_irrigacao}'''
 
-            return jsonify(lista_resultados), 200
+        # Criar uma conexão com o banco de dados
+        engine = create_engine('postgresql://postgres:dexter@localhost:5432/GeoDb')  # Substitua pela sua string de conexão
+        conn = engine.connect()
+
+        # Executar a query
+        resultados = conn.execute(text(query)).fetchall()
+
+        # Montar a lista de resultados
+        lista_resultados = []
+        for resultado in resultados:
+            resultado_dict = {
+                "ref_bacen": resultado.ref_bacen,
+                "nu_ordem": resultado.nu_ordem,
+                "coordenadas": resultado.coordenadas,
+                "inicio_plantio": resultado.inicio_plantio,
+                "final_plantio": resultado.final_plantio,
+                "data_liberacao": resultado.data_liberacao,
+                "data_vencimento": resultado.data_vencimento,
+                "inicio_colheita": resultado.inicio_colheita,
+                "final_colheita": resultado.final_colheita,
+                "descricao_irrigacao": resultado.desc_irrigacao,
+                "descricao_ciclo": resultado.descricao_ciclo,
+            }
+            lista_resultados.append(resultado_dict)
+
+        #  Fechar a conexão
+        conn.close()
+
+        return jsonify(lista_resultados), 200
 
     except Exception as e:
         # Tratamento de erro: retorna uma mensagem de erro genérica em caso de exceção
