@@ -6,7 +6,7 @@ import requests
 app = Flask(__name__)
 
 # Configurações do banco de dados PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost/postgres'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:A@996739786@localhost/geoforesight'
 db = SQLAlchemy(app)
 
 # Defina o modelo para a tabela "table"
@@ -146,50 +146,52 @@ def obter_ciclo_producao(id):
     except Exception as e:
         return jsonify({"mensagem": "Erro interno do servidor"}), 500
     
-@app.route('/consulta/<int:id>', methods=['GET'])
-def consulta_dinamica(ref_bacen, nu_ordem, coordenadas, altitude, inicio_plantio, final_plantio, inicio_colheita, descricao_grao, descricao_producao, descricao_irrigacao):
-
-    query = ''' select glebas.ref_bacen, glebas.nu_ordem, glebas.coordenadas, operacao_credito_estadual.inicio_plantio, operacao_credito_estadual.final_plantio, operacao_credito_estadual.data_liberacao, operacao_credito_estadual.data_vencimento,
-                                    operacao_credito_estadual.inicio_colheita, operacao_credito_estadual.final_colheita, irrigacao.descricao, ciclo_producao.descricao, produtos.nome
-                                    from glebas
-                                    join operacao_credito_estadual on glebas.ref_bacen = operacao_credito_estadual.ref_bacen
-                                    join irrigacao on irrigacao.idirrigacao = operacao_credito_estadual.idirrigacao
-                                    join ciclo_producao on ciclo_producao.idciclo = operacao_credito_estadual.idciclo
-                                    join empreendimento on empreendimento.idteste = operacao_credito_estadual.idempreendimento
-                                    join produtos on produtos.idproduto = empreendimento.idproduto
-                                '''
+@app.route('/consulta/<int:ref_bacen>/<int:nu_ordem>/<string:coordenadas>/<int:altitude>/<string:inicio_plantio>/<string:final_plantio>/<string:inicio_colheita>/<string:final_colheita>/<string:descricao_grao>/<string:descricao_producao>/<string:descricao_irrigacao>', methods=['GET'])
+def consulta_dinamica(ref_bacen, nu_ordem, coordenadas, altitude, inicio_plantio, final_plantio, inicio_colheita, final_colheita, descricao_grao, descricao_producao, descricao_irrigacao):
     
+    try:
+        
+            query = ''' select glebas.ref_bacen, glebas.nu_ordem, glebas.coordenadas, operacao_credito_estadual.inicio_plantio, operacao_credito_estadual.final_plantio, operacao_credito_estadual.data_liberacao, operacao_credito_estadual.data_vencimento,
+                                            operacao_credito_estadual.inicio_colheita, operacao_credito_estadual.final_colheita, irrigacao.descricao, ciclo_producao.descricao, produtos.nome
+                                            from glebas
+                                            join operacao_credito_estadual on glebas.ref_bacen = operacao_credito_estadual.ref_bacen
+                                            join irrigacao on irrigacao.idirrigacao = operacao_credito_estadual.idirrigacao
+                                            join ciclo_producao on ciclo_producao.idciclo = operacao_credito_estadual.idciclo
+                                            join empreendimento on empreendimento.idteste = operacao_credito_estadual.idempreendimento
+                                            join produtos on produtos.idproduto = empreendimento.idproduto
+                                            where 1
+                                        '''
+        
+            if ref_bacen != "NULL":
+                query += f''' and ref_bacen = {ref_bacen}'''
+            if nu_ordem != "NULL":
+                query += f''' and ref_bacen = {ref_bacen}'''
+            if coordenadas != "NULL":
+                query += f''' and ref_bacen = {ref_bacen}'''
+            if altitude != "NULL":
+                query += f''' and ref_bacen = {ref_bacen}'''
+            if inicio_plantio != "NULL":
+                query += f''' and ref_bacen = {ref_bacen}'''
+            if final_plantio != "NULL":
+                query += f''' and ref_bacen = {ref_bacen}'''
+            if inicio_colheita != "NULL":
+                query += f''' and ref_bacen = {ref_bacen}'''   
+            if final_colheita != "NULL":
+                query += f''' and ref_bacen = {ref_bacen}'''
+                
+            if descricao_grao != "NULL":
+                query += f''' and ref_bacen = {ref_bacen}'''
+                
+            if descricao_producao != "NULL":
+                query += f''' and ref_bacen = {ref_bacen}'''
+                
+            if descricao_irrigacao != "NULL":
+                query += f''' and ref_bacen = {ref_bacen}'''
 
+    except Exception as e:
+        # Tratamento de erro: retorna uma mensagem de erro genérica em caso de exceção
 
-    
-    if ref_bacen:
-        # Consulta usando SQLAlchemy
-        results = results.query(query)
-    if ref_bacen:
-        # Consulta usando SQLAlchemy
-        results = results.query(query)
-            
-    else:
-        # Retorna uma mensagem de erro se ref_bacen não for especificado
-        return jsonify({'error': 'O parâmetro ref_bacen é obrigatório'}), 400
-    
-    # Transforma os resultados em um formato JSON
-    result_dict_list = []
-    for result in results:
-        result_dict = {
-            'ref_bacen': result[0],
-            'nu_ordem': result[1],
-            'coordenadas': result[2],
-            'inicio_plantio': result[3],
-            'final_plantio': result[4],
-            'data_liberacao': result[5],
-            'data_vencimento': result[6],
-            'inicio_colheita': result[7],
-            'final_colheita': result[8],
-        }
-        result_dict_list.append(result_dict)
-
-    return jsonify(result_dict_list)
+        return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
 
 
 if __name__ == '__main__':
