@@ -6,14 +6,19 @@ CREATE TABLE IF NOT EXISTS public.produtos (
     nome character varying(255) NOT NULL
 )
 
-CREATE TABLE IF NOT EXISTS public.empreendimento (
-	idteste SERIAL PRIMARY KEY,
-    idEmpreendimento bigint NOT NULL,
+CREATE TABLE IF NOT EXISTS public.empreendimento
+(
+    idteste serial NOT NULL DEFAULT nextval('empreendimento_idteste_seq'::regclass),
+    idempreendimento bigint NOT NULL,
     idproduto integer NOT NULL,
-    finalidade character varying(255),
-    cesta character varying(255) NOT NULL,
-    modalidade character varying(255) NOT NULL,
-    FOREIGN KEY (idproduto) REFERENCES public.produtos (idproduto)
+    finalidade character varying(255) COLLATE pg_catalog."default",
+    cesta character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    modalidade character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT empreendimento_pkey PRIMARY KEY (idteste),
+    CONSTRAINT empreendimento_idproduto_fkey FOREIGN KEY (idproduto)
+        REFERENCES public.produtos (idproduto) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
 )
 
 CREATE TABLE IF NOT EXISTS public.irrigacao (
@@ -31,7 +36,8 @@ CREATE TABLE IF NOT EXISTS public.ciclo_producao (
     descricao character varying(255)
 )
 
-CREATE TABLE IF NOT EXISTS public.operacao_credito_estadual (
+CREATE TABLE IF NOT EXISTS public.operacao_credito_estadual
+(
     ref_bacen integer NOT NULL,
     nu_ordem integer NOT NULL,
     inicio_plantio date NOT NULL,
@@ -41,15 +47,24 @@ CREATE TABLE IF NOT EXISTS public.operacao_credito_estadual (
     data_liberacao date NOT NULL,
     data_vencimento date NOT NULL,
     idempreendimento integer,
-    idIrrigacao integer,
-    idCiclo integer,
-    idGrao integer,
-    PRIMARY KEY (ref_bacen, nu_ordem),
-    FOREIGN KEY (idEmpreendimento) REFERENCES public.empreendimento (idEmpreendimento),
-    FOREIGN KEY (idIrrigacao) REFERENCES public.irrigacao (idIrrigacao),
-    FOREIGN KEY (idCiclo) REFERENCES public.ciclo_producao (idCiclo),
-    FOREIGN KEY (idGrao) REFERENCES public.grao (idGrao)
+    idirrigacao integer,
+    idciclo integer,
+    idgrao integer,
+    CONSTRAINT operacao_credito_estadual_pkey PRIMARY KEY (ref_bacen, nu_ordem),
+    CONSTRAINT operacao_credito_estadual_idciclo_fkey FOREIGN KEY (idciclo)
+        REFERENCES public.ciclo_producao (idciclo) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT operacao_credito_estadual_idgrao_fkey FOREIGN KEY (idgrao)
+        REFERENCES public.grao (idgrao) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT operacao_credito_estadual_idirrigacao_fkey FOREIGN KEY (idirrigacao)
+        REFERENCES public.irrigacao (idirrigacao) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
 )
+
 
 CREATE TABLE IF NOT EXISTS public.glebas (
     idGleba INTEGER NOT NULL PRIMARY KEY,
