@@ -147,9 +147,10 @@ def obter_ciclo_producao(id):
     except Exception as e:
         return jsonify({"mensagem": "Erro interno do servidor"}), 500
     
-@app.route('/consulta', methods=['GET'])
-def consulta_dinamica(ref_bacen="NULL", nu_ordem="NULL", coordenadas="NULL", altitude="NULL", inicio_plantio="NULL", final_plantio="NULL", inicio_colheita="NULL", final_colheita="NULL", descricao_grao="NULL", descricao_producao="NULL", descricao_irrigacao="NULL"):
-    
+@app.route('/consulta_dinamica/', methods=['POST'])
+def consulta_dinamica():
+    data = request.json
+    print(data)
     try:
         
         query = ''' SELECT 
@@ -175,31 +176,29 @@ def consulta_dinamica(ref_bacen="NULL", nu_ordem="NULL", coordenadas="NULL", alt
             WHERE 
                 1=1 '''
             
-        if ref_bacen != "NULL":
-            query += f'''AND glebas.ref_bacen = {ref_bacen}'''
-        if nu_ordem != "NULL":
-            query += f'''AND  and glebas.nu_ordem = {nu_ordem}'''
-        if coordenadas != "NULL":
-            query += f'''AND  and glebas.coordenadas = {coordenadas}'''
-        if altitude != "NULL":
-            query += f'''AND  and glebas.altitude = {altitude}'''
-        if inicio_plantio != "NULL":
-            query += f'''AND  and operacao_credito_estadual.inicio_plantio = {inicio_plantio}'''
-        if final_plantio != "NULL":
-            query += f'''AND  and operacao_credito_estadual.final_plantio = {final_plantio}'''
-        if inicio_colheita != "NULL":
-            query += f'''AND  and operacao_credito_estadual.inicio_colheita = {inicio_colheita}'''   
-        if final_colheita != "NULL":
-            query += f'''AND  and operacao_credito_estadual.final_colheita = {final_colheita}'''
+        if data['ref_bacen'] != "NULL":
+            query += f'''AND glebas.ref_bacen = {data['ref_bacen']}'''
+        if data['nu_ordem'] != "NULL":
+            query += f'''AND glebas.nu_ordem = {data['nu_ordem']}'''
+        if data['altitude'] != "NULL":
+            query += f'''AND glebas.altitude = {data['altitude']}'''
+        if data['inicio_plantio'] != "NULL":
+            query += f"AND operacao_credito_estadual.inicio_plantio = {data['inicio_plantio']}"
+        if data['final_plantio'] != "NULL":
+            query += f'''AND operacao_credito_estadual  .final_plantio = {data['final_plantio']}'''
+        if data['inicio_colheita'] != "NULL":
+            query += f'''AND operacao_credito_estadual.inicio_colheita = {data['inicio_colheita']}'''   
+        if data['final_colheita'] != "NULL":
+            query += f'''AND operacao_credito_estadual.final_colheita = {data['final_colheita']}'''
             
-        if descricao_grao != "NULL":
-            query += f'''AND  and grao.descricao_grao = {descricao_grao}'''
+        if data['descricao_grao'] != "NULL":
+            query += f'''AND grao.descricao_grao = {data['descricao_grao']}'''
             
-        if descricao_producao != "NULL":
-            query += f'''AND  and ciclo_producao.descricao_producao = {descricao_producao}'''
+        if data['descricao_producao'] != "NULL":
+            query += f'''AND ciclo_producao.descricao_producao = {data['descricao_producao']}'''
             
-        if descricao_irrigacao != "NULL":
-            query += f'''AND  and irrigacao.descricao_irrigacao = {descricao_irrigacao}'''
+        if data['descricao_irrigacao'] != "NULL":
+            query += f'''AND irrigacao.descricao_irrigacao = {data['descricao_irrigacao']}'''
 
         # Criar uma conexão com o banco de dados
         engine = create_engine('postgresql://postgres:dexter@localhost:5432/GeoDb')  # Substitua pela sua string de conexão
