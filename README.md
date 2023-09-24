@@ -2,7 +2,7 @@
 
 #### First, some prerequisites:
 
-**To run this locally, you will need:**
+**To run this project locally, you will need:**
 
 * The latest version of PostgreSQL installed on your machine, which is currently version 15. Follow the [installation guide](https://www.2ndquadrant.com/en/blog/pginstaller-install-postgresql/).
 * After that, access the database path, and execute the database creation, which can be found in this repository in the **create.sql** file.
