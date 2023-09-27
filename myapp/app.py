@@ -1,13 +1,16 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 from geoalchemy2 import Geography
 import requests
 from sqlalchemy import create_engine, text
 
 app = Flask(__name__)
 
+CORS(app)
+
 # Configurações do banco de dados PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:dexter@localhost/GeoDb'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost/postgres'
 db = SQLAlchemy(app)
 
 # Defina o modelo para a tabela "table"
@@ -177,31 +180,33 @@ def consulta_dinamica():
                 1=1 '''
             
         if data['ref_bacen'] != "NULL":
-            query += f'''AND glebas.ref_bacen = {data['ref_bacen']}'''
+            query += f"AND glebas.ref_bacen = {data['ref_bacen']}"
         if data['nu_ordem'] != "NULL":
-            query += f'''AND glebas.nu_ordem = {data['nu_ordem']}'''
+            query += f"AND glebas.nu_ordem = {data['nu_ordem']}"
         if data['altitude'] != "NULL":
-            query += f'''AND glebas.altitude = {data['altitude']}'''
+            query += f"AND glebas.altitude = {data['altitude']}"
         if data['inicio_plantio'] != "NULL":
             query += f"AND operacao_credito_estadual.inicio_plantio = {data['inicio_plantio']}"
         if data['final_plantio'] != "NULL":
-            query += f'''AND operacao_credito_estadual  .final_plantio = {data['final_plantio']}'''
+            query += f"AND operacao_credito_estadual  .final_plantio = {data['final_plantio']}"
         if data['inicio_colheita'] != "NULL":
-            query += f'''AND operacao_credito_estadual.inicio_colheita = {data['inicio_colheita']}'''   
+            query += f"AND operacao_credito_estadual.inicio_colheita = {data['inicio_colheita']}"   
         if data['final_colheita'] != "NULL":
-            query += f'''AND operacao_credito_estadual.final_colheita = {data['final_colheita']}'''
+            query += f"AND operacao_credito_estadual.final_colheita = {data['final_colheita']}"
             
         if data['descricao_grao'] != "NULL":
-            query += f'''AND grao.descricao_grao = {data['descricao_grao']}'''
+            query += f"AND grao.descricao_grao = '{data['descricao_grao']}'"
             
         if data['descricao_producao'] != "NULL":
-            query += f'''AND ciclo_producao.descricao_producao = {data['descricao_producao']}'''
+            query += f"AND ciclo_producao.descricao_producao = '{data['descricao_producao']}'"
             
         if data['descricao_irrigacao'] != "NULL":
-            query += f'''AND irrigacao.descricao_irrigacao = {data['descricao_irrigacao']}'''
+            query += f"AND irrigacao.descricao= '{data['descricao_irrigacao']}'"
+
+        
 
         # Criar uma conexão com o banco de dados
-        engine = create_engine('postgresql://postgres:dexter@localhost:5432/GeoDb')  # Substitua pela sua string de conexão
+        engine = create_engine('postgresql://postgres:root@localhost/postgres')  # Substitua pela sua string de conexão
         conn = engine.connect()
 
         # Executar a query
