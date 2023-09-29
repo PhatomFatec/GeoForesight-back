@@ -10,7 +10,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Configurações do banco de dados PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost/postgres'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123@localhost/geoforesight'
 db = SQLAlchemy(app)
 
 # Defina o modelo para a tabela "table"
@@ -123,33 +123,7 @@ class empreendimento(db.Model):
 
 with app.app_context():
     db.create_all()
-
-
-@app.route('/table', methods=['GET'])
-def get_table_data():
-    try:
-        data = Table.query.all()
-        response = [{'id': item.id, 'name': item.name} for item in data]
-        return jsonify(response)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/ciclo_producao/<int:id>', methods=['GET'])
-def obter_ciclo_producao(id):
-    try:
-        ciclo = ciclo_producao.query.get(id)
-        if ciclo is None:
-            return jsonify({"mensagem": "Ciclo não encontrado"}), 404
-
-        # Você pode retornar os dados do ciclo como JSON
-        return jsonify({
-            "idciclo": ciclo.idciclo,
-            "descricao": ciclo.descricao
-        }), 200
-    except Exception as e:
-        return jsonify({"mensagem": "Erro interno do servidor"}), 500
-    
+   
 @app.route('/consulta_dinamica/', methods=['POST'])
 def consulta_dinamica():
     data = request.json
@@ -166,47 +140,46 @@ def consulta_dinamica():
             operacao_credito_estadual.data_vencimento,
             operacao_credito_estadual.inicio_colheita,
             operacao_credito_estadual.final_colheita,
-            irrigacao.descricao as desc_irrigacao,
-            ciclo_producao.descricao as descricao_ciclo
+            irrigacao.descricao as descricao_irrigacao,
+            ciclo_producao.descricao as descricao_producao,
+            grao.descricao as descricao_grao
             FROM 
             glebas
             JOIN 
                 operacao_credito_estadual ON glebas.ref_bacen = operacao_credito_estadual.ref_bacen
             JOIN 
                 irrigacao ON irrigacao.idirrigacao = operacao_credito_estadual.idirrigacao
+			JOIN 
+				grao ON grao.idgrao = operacao_credito_estadual.idgrao
             JOIN 
                 ciclo_producao ON ciclo_producao.idciclo = operacao_credito_estadual.idciclo
             WHERE 
                 1=1 '''
             
         if data['ref_bacen'] != "NULL":
-            query += f"AND glebas.ref_bacen = {data['ref_bacen']}"
+            query += f" AND glebas.ref_bacen = {data['ref_bacen']}"
         if data['nu_ordem'] != "NULL":
-            query += f"AND glebas.nu_ordem = {data['nu_ordem']}"
+            query += f" AND glebas.nu_ordem = {data['nu_ordem']}"
         if data['altitude'] != "NULL":
-            query += f"AND glebas.altitude = {data['altitude']}"
+            query += f" AND glebas.altitude = {data['altitude']}"
         if data['inicio_plantio'] != "NULL":
-            query += f"AND operacao_credito_estadual.inicio_plantio = {data['inicio_plantio']}"
+            query += f" AND operacao_credito_estadual.inicio_plantio = '{data['inicio_plantio']}'"
         if data['final_plantio'] != "NULL":
-            query += f"AND operacao_credito_estadual  .final_plantio = {data['final_plantio']}"
+            query += f" AND operacao_credito_estadual.final_plantio = '{data['final_plantio']}'"
         if data['inicio_colheita'] != "NULL":
-            query += f"AND operacao_credito_estadual.inicio_colheita = {data['inicio_colheita']}"   
+            query += f" AND operacao_credito_estadual.inicio_colheita = '{data['inicio_colheita']}'"   
         if data['final_colheita'] != "NULL":
-            query += f"AND operacao_credito_estadual.final_colheita = {data['final_colheita']}"
-            
+            query += f" AND operacao_credito_estadual.final_colheita = '{data['final_colheita']}'"
         if data['descricao_grao'] != "NULL":
-            query += f"AND grao.descricao_grao = '{data['descricao_grao']}'"
-            
+            query += f" AND grao.descricao = '{data['descricao_grao']}'"
         if data['descricao_producao'] != "NULL":
-            query += f"AND ciclo_producao.descricao_producao = '{data['descricao_producao']}'"
-            
+            query += f" AND ciclo_producao.descricao = '{data['descricao_producao']}'"
         if data['descricao_irrigacao'] != "NULL":
-            query += f"AND irrigacao.descricao= '{data['descricao_irrigacao']}'"
+            query += f" AND irrigacao.descricao= '{data['descricao_irrigacao']}'"
 
-        
 
         # Criar uma conexão com o banco de dados
-        engine = create_engine('postgresql://postgres:root@localhost/postgres')  # Substitua pela sua string de conexão
+        engine = create_engine('postgresql://postgres:123@localhost/geoforesight')  # Substitua pela sua string de conexão
         conn = engine.connect()
 
         # Executar a query
@@ -216,7 +189,7 @@ def consulta_dinamica():
         lista_resultados = []
         for resultado in resultados:
             resultado_dict = {
-                "ref_bacen": resultado.ref_bacen,
+                 "ref_bacen": resultado.ref_bacen,
                 "nu_ordem": resultado.nu_ordem,
                 "coordenadas": resultado.coordenadas,
                 "inicio_plantio": resultado.inicio_plantio,
@@ -225,8 +198,9 @@ def consulta_dinamica():
                 "data_vencimento": resultado.data_vencimento,
                 "inicio_colheita": resultado.inicio_colheita,
                 "final_colheita": resultado.final_colheita,
-                "descricao_irrigacao": resultado.desc_irrigacao,
-                "descricao_ciclo": resultado.descricao_ciclo,
+                "descricao_grao": resultado.descricao_grao,
+                "descricao_irrigacao": resultado.descricao_irrigacao,
+                "descricao_producao": resultado.descricao_producao,
             }
             lista_resultados.append(resultado_dict)
 
