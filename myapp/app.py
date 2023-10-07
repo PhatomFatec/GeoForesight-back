@@ -228,11 +228,13 @@ def login():
     email = data.get('email')
     senha = data.get('senha')
 
-    user = User.query.filter_by(email=email, senha=senha).first()
+    user = User.query.filter_by(email=email, senha=senha).first() # email padrão -> admin@admin.com, senha 
 
     if user:
         return jsonify({'message': 'Login bem-sucedido!'})
     else:
         return jsonify({'message': 'Credenciais inválidas.'}), 401
+
+
 if __name__ == '__main__':
     app.run(debug=True)
