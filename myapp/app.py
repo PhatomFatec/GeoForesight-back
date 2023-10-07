@@ -121,6 +121,11 @@ class empreendimento(db.Model):
         'produtos.idproduto'), nullable=False)
 
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    senha = db.Column(db.String(255), nullable=False)
+
 with app.app_context():
     db.create_all()
    
@@ -215,5 +220,19 @@ def consulta_dinamica():
         return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
 
 
+
+
+@app.route('/login/', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    senha = data.get('senha')
+
+    user = User.query.filter_by(email=email, senha=senha).first()
+
+    if user:
+        return jsonify({'message': 'Login bem-sucedido!'})
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
 if __name__ == '__main__':
     app.run(debug=True)
