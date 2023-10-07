@@ -228,12 +228,20 @@ def login():
     email = data.get('email')
     senha = data.get('senha')
 
-    user = User.query.filter_by(email=email, senha=senha).first() # email padrão -> admin@admin.com, senha 
+    user = User.query.filter_by(email=email, senha=senha).first() # email padrão -> admin@admin.com, senha padrão -> admin123
 
-    if user:
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha_hash.encode('utf-8')):
+        # Verifica se existe um usuário com o email fornecido (user) e
+        # se a senha fornecida (senha) corresponde à senha armazenada no banco de dados (user.senha_hash).
+
         return jsonify({'message': 'Login bem-sucedido!'})
+        # Se as credenciais (email e senha) forem válidas, retorna uma resposta JSON com uma mensagem de "Login bem-sucedido!".
+
     else:
         return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+
 
 
 if __name__ == '__main__':
