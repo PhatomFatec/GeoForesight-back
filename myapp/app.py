@@ -1,3 +1,4 @@
+import bcrypt
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -15,6 +16,7 @@ db = SQLAlchemy(app)
 
 # Defina o modelo para a tabela "table"
 
+
 class Table(db.Model):
     __tablename__ = 'table'
     id = db.Column(db.Integer, primary_key=True)
@@ -25,6 +27,7 @@ class Table(db.Model):
 #     descricao = db.Column(db.String(255))
 #     operacao_credito_estadual = db.relationship(
 #         'operacao_credito_estadual', backref='clima')
+
 
 class irrigacao(db.Model):
     idirrigacao = db.Column(db.Integer, primary_key=True,
@@ -121,15 +124,22 @@ class empreendimento(db.Model):
         'produtos.idproduto'), nullable=False)
 
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    senha = db.Column(db.String(255), nullable=False)
+
+
 with app.app_context():
     db.create_all()
-   
+
+
 @app.route('/consulta_dinamica/', methods=['POST'])
 def consulta_dinamica():
     data = request.json
     print(data)
     try:
-        
+
         query = ''' SELECT 
             glebas.ref_bacen,
             glebas.nu_ordem,
@@ -155,7 +165,7 @@ def consulta_dinamica():
                 ciclo_producao ON ciclo_producao.idciclo = operacao_credito_estadual.idciclo
             WHERE 
                 1=1 '''
-            
+
         if data['ref_bacen'] != "NULL":
             query += f" AND glebas.ref_bacen = {data['ref_bacen']}"
         if data['nu_ordem'] != "NULL":
@@ -163,23 +173,30 @@ def consulta_dinamica():
         if data['altitude'] != "NULL":
             query += f" AND glebas.altitude = {data['altitude']}"
         if data['inicio_plantio'] != "NULL":
-            query += f" AND operacao_credito_estadual.inicio_plantio = '{data['inicio_plantio']}'"
+            query += f" AND operacao_credito_estadual.inicio_plantio = '{
+                data['inicio_plantio']}'"
         if data['final_plantio'] != "NULL":
-            query += f" AND operacao_credito_estadual.final_plantio = '{data['final_plantio']}'"
+            query += f" AND operacao_credito_estadual.final_plantio = '{
+                data['final_plantio']}'"
         if data['inicio_colheita'] != "NULL":
-            query += f" AND operacao_credito_estadual.inicio_colheita = '{data['inicio_colheita']}'"   
+            query += f" AND operacao_credito_estadual.inicio_colheita = '{
+                data['inicio_colheita']}'"
         if data['final_colheita'] != "NULL":
-            query += f" AND operacao_credito_estadual.final_colheita = '{data['final_colheita']}'"
+            query += f" AND operacao_credito_estadual.final_colheita = '{
+                data['final_colheita']}'"
         if data['descricao_grao'] != "NULL":
             query += f" AND grao.descricao = '{data['descricao_grao']}'"
         if data['descricao_producao'] != "NULL":
-            query += f" AND ciclo_producao.descricao = '{data['descricao_producao']}'"
+            query += f" AND ciclo_producao.descricao = '{
+                data['descricao_producao']}'"
         if data['descricao_irrigacao'] != "NULL":
-            query += f" AND irrigacao.descricao= '{data['descricao_irrigacao']}'"
-
+            query += f" AND irrigacao.descricao= '{
+                data['descricao_irrigacao']}'"
 
         # Criar uma conexão com o banco de dados
-        engine = create_engine('postgresql://postgres:123@localhost/geoforesight')  # Substitua pela sua string de conexão
+        # Substitua pela sua string de conexão
+        engine = create_engine(
+            'postgresql://postgres:123@localhost/geoforesight')
         conn = engine.connect()
 
         # Executar a query
@@ -189,7 +206,7 @@ def consulta_dinamica():
         lista_resultados = []
         for resultado in resultados:
             resultado_dict = {
-                 "ref_bacen": resultado.ref_bacen,
+                "ref_bacen": resultado.ref_bacen,
                 "nu_ordem": resultado.nu_ordem,
                 "coordenadas": resultado.coordenadas,
                 "inicio_plantio": resultado.inicio_plantio,
@@ -215,5 +232,27 @@ def consulta_dinamica():
         return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
 
 
-if __name__ == '__main__':
+@app.route('/login/', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Verifica se existe um usuário com o email fornecido (user) e
+        # se a senha fornecida (senha) corresponde à senha armazenada no banco de dados (user.senha_hash).
+
+        return jsonify({'message': 'Login bem-sucedido!'})
+        # Se as credenciais (email e senha) forem válidas, retorna uma resposta JSON com uma mensagem de "Login bem-sucedido!".
+
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+
+
+if _name_ == '_main_':
     app.run(debug=True)
