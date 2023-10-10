@@ -6,7 +6,15 @@ from geoalchemy2 import Geography
 import requests
 from sqlalchemy import create_engine, text
 
-app = Flask(__name__)
+from flask_jwt_extended import (
+    JWTManager, create_access_token, jwt_required, get_jwt_identity
+)
+
+app = Flask(_name_)
+
+# app.config['JWT_SECRET_KEY'] = 'your-secret-key'
+
+jwt = JWTManager(app)
 
 CORS(app)
 
@@ -18,7 +26,7 @@ db = SQLAlchemy(app)
 
 
 class Table(db.Model):
-    __tablename__ = 'table'
+    tablename = 'table'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
 
@@ -96,7 +104,7 @@ class operacao_credito_estadual(db.Model):
         db.Integer, db.ForeignKey('empreendimento.idempreendimento'))
     # glebas = db.relationship('glebas', backref='operacao_credito_estadual')
 
-    __table_args__ = (
+    table_args = (
         db.PrimaryKeyConstraint('ref_bacen', 'nu_ordem'),
     )
 
@@ -135,7 +143,9 @@ with app.app_context():
 
 
 @app.route('/consulta_dinamica/', methods=['POST'])
+@jwt_required()
 def consulta_dinamica():
+    current_user = get_jwt_identity()
     data = request.json
     print(data)
     try:
@@ -173,25 +183,19 @@ def consulta_dinamica():
         if data['altitude'] != "NULL":
             query += f" AND glebas.altitude = {data['altitude']}"
         if data['inicio_plantio'] != "NULL":
-            query += f" AND operacao_credito_estadual.inicio_plantio = '{
-                data['inicio_plantio']}'"
+            query += f" AND operacao_credito_estadual.inicio_plantio = '{data['inicio_plantio']}'"
         if data['final_plantio'] != "NULL":
-            query += f" AND operacao_credito_estadual.final_plantio = '{
-                data['final_plantio']}'"
+            query += f" AND operacao_credito_estadual.final_plantio = '{data['final_plantio']}'"
         if data['inicio_colheita'] != "NULL":
-            query += f" AND operacao_credito_estadual.inicio_colheita = '{
-                data['inicio_colheita']}'"
+            query += f" AND operacao_credito_estadual.inicio_colheita = '{data['inicio_colheita']}'"
         if data['final_colheita'] != "NULL":
-            query += f" AND operacao_credito_estadual.final_colheita = '{
-                data['final_colheita']}'"
+            query += f" AND operacao_credito_estadual.final_colheita = '{data['final_colheita']}'"
         if data['descricao_grao'] != "NULL":
             query += f" AND grao.descricao = '{data['descricao_grao']}'"
         if data['descricao_producao'] != "NULL":
-            query += f" AND ciclo_producao.descricao = '{
-                data['descricao_producao']}'"
+            query += f" AND ciclo_producao.descricao = '{data['descricao_producao']}'"
         if data['descricao_irrigacao'] != "NULL":
-            query += f" AND irrigacao.descricao= '{
-                data['descricao_irrigacao']}'"
+            query += f" AND irrigacao.descricao= '{data['descricao_irrigacao']}'"
 
         # Criar uma conexão com o banco de dados
         # Substitua pela sua string de conexão
@@ -242,12 +246,9 @@ def login():
     user = User.query.filter_by(email=email).first()
 
     if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Verifica se existe um usuário com o email fornecido (user) e
-        # se a senha fornecida (senha) corresponde à senha armazenada no banco de dados (user.senha_hash).
-
-        return jsonify({'message': 'Login bem-sucedido!'})
-        # Se as credenciais (email e senha) forem válidas, retorna uma resposta JSON com uma mensagem de "Login bem-sucedido!".
-
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
     else:
         return jsonify({'message': 'Credenciais inválidas.'}), 401
         # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
