@@ -10,6 +10,11 @@ from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, get_jwt_identity
 )
 
+
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+
+
 app = Flask(_name_)
 
 # app.config['JWT_SECRET_KEY'] = 'your-secret-key'
@@ -23,6 +28,24 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123@localhost/geo
 db = SQLAlchemy(app)
 
 # Defina o modelo para a tabela "table"
+
+#############################
+##### Define Functions ######
+#############################
+
+def mongo_connection():
+    uri = "mongodb+srv://phantom:<password>@cluster0.yxkoek8.mongodb.net/?retryWrites=true&w=majority"
+    client = MongoClient(uri)
+
+    # Nome da coleção
+    collection = client.GeoForesight.User
+
+    return collection
+
+
+#############################
+##### Database Classes ######
+#############################
 
 
 class Table(db.Model):
@@ -142,6 +165,13 @@ with app.app_context():
     db.create_all()
 
 
+
+#############################
+###### Create Routes ########
+#############################
+
+
+
 @app.route('/consulta_dinamica/', methods=['POST'])
 @jwt_required()
 def consulta_dinamica():
@@ -255,5 +285,35 @@ def login():
         # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
 
 
-if _name_ == '_main_':
+@app.route('/loginmongo/', methods=['POST'])
+def login_mongo():
+    # Suponha que você tenha o email e senha fornecidos no seu código
+    data = request.get_json()
+    email = data.get('email')
+    senha = data.get('senha')
+
+    collection = mongo_connection()
+
+    # Encontre o usuário com o email fornecido
+    user = collection.find_one({"email": email})
+
+    # Recupere o hash da senha do documento MongoDB
+    hashed_password = user.get("senha")
+
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), hashed_password.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    
+    # Feche a conexão com o MongoDB
+    client.close()
+
+
+# main
+if __name__ == '__main__':
     app.run(debug=True)
