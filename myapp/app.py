@@ -318,6 +318,18 @@ def consulta_dinamica():
         return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
 
 
+@app.route('/consulta_dinamica/', methods=['POST'])
+@jwt_required()
+def consulta_dinamica():
+    current_user = get_jwt_identity()
+    data = request.json
+
+# adicionar os seguintes campos no filtro da query dinamica:
+    # Solo 
+    # Clima
+    # Ciclo do cultivo
+    # Estado
+
 
 # main
 if __name__ == '__main__':
