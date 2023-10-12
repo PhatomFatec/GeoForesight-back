@@ -167,9 +167,61 @@ with app.app_context():
 
 
 #############################
-###### Create Routes ########
+###### login routes #########
 #############################
 
+
+@app.route('/login/', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+
+
+@app.route('/loginmongo/', methods=['POST'])
+def login_mongo():
+    data = request.get_json()
+    email = data.get('email')
+    senha = data.get('senha')
+
+    collection = mongo_connection()
+
+    # Encontre o usuário com o email fornecido
+    user = collection.find_one({"email": email})
+
+    # Recupere o hash da senha do documento MongoDB
+    hashed_password = user.get("senha")
+
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), hashed_password.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    
+    # Feche a conexão com o MongoDB
+    client.close()
+
+
+
+#############################
+###### General Routes #######
+#############################
 
 
 @app.route('/consulta_dinamica/', methods=['POST'])
@@ -265,53 +317,6 @@ def consulta_dinamica():
 
         return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
 
-
-@app.route('/login/', methods=['POST'])
-def login():
-    data = request.get_json()
-    email = data.get('email')
-    senha = data.get('senha')
-
-    # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
-
-
-@app.route('/loginmongo/', methods=['POST'])
-def login_mongo():
-    # Suponha que você tenha o email e senha fornecidos no seu código
-    data = request.get_json()
-    email = data.get('email')
-    senha = data.get('senha')
-
-    collection = mongo_connection()
-
-    # Encontre o usuário com o email fornecido
-    user = collection.find_one({"email": email})
-
-    # Recupere o hash da senha do documento MongoDB
-    hashed_password = user.get("senha")
-
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), hashed_password.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
-    
-    # Feche a conexão com o MongoDB
-    client.close()
 
 
 # main
