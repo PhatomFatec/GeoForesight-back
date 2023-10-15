@@ -1,24 +1,3 @@
-########################################
-#### Annotation  #######################
-
-# tudo que estava comentado estava certo, só fiz algumas pequenas mudanças.
-# por agora comentei a parte do mongo tbm, porue não vai ser usado.
-# importante pensar numa coisa, ali vc colocou como none, mas antes estava como string "NULL" 
-# porque o marcus envia assim pra gente, tem que combinar com ele se envia como None, se sim sucesso!
-
-# no mais, se achar que o código tá confundindo ou algo nesse sentido, pode comentar tudo e deixar só o endpoint mesmo
-# como já tem o banco criado e configurado, se comentar tudo e deixar só a chamada ele funciona.
-
-# testei alguns where e parece estar tudo ok, o problema seria o cors mesmo que aí é b.o do note
-
-#################################################################################################################
-# FIM
-
-
-
-
-
-
 import bcrypt
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
