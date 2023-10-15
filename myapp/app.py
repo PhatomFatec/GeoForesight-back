@@ -17,7 +17,7 @@ from flask_jwt_extended import (
 
 app = Flask(__name__)
 
-# app.config['JWT_SECRET_KEY'] = 'your-secret-key'
+app.config['JWT_SECRET_KEY'] = 'your-secret-key'
 
 jwt = JWTManager(app)
 
@@ -175,6 +175,84 @@ with app.app_context():
 def login():
     data = request.get_json()
     email = data.get('email')
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
     senha = data.get('senha')
 
     # email padrão -> admin@admin.com, senha padrão -> admin123
