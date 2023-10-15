@@ -19,17 +19,17 @@
 
 
 
-#import bcrypt
+import bcrypt
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
-#from flask_cors import CORS
+from flask_cors import CORS
 from geoalchemy2 import Geography
 import requests
 from sqlalchemy import create_engine, text
 
-# from flask_jwt_extended import (
-#     JWTManager, create_access_token, jwt_required, get_jwt_identity
-# )
+from flask_jwt_extended import (
+    JWTManager, create_access_token, jwt_required, get_jwt_identity
+)
 
 
 # from pymongo.mongo_client import MongoClient
@@ -38,11 +38,11 @@ from sqlalchemy import create_engine, text
 
 app = Flask(__name__)
 
-# app.config['JWT_SECRET_KEY'] = 'your-secret-key'
+app.config['JWT_SECRET_KEY'] = 'your-secret-key'
 
-# jwt = JWTManager(app)
+jwt = JWTManager(app)
 
-# CORS(app)
+CORS(app)
 
 # Configurações do banco de dados PostgreSQL
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:dexter@localhost/geodbnovo'
@@ -192,23 +192,101 @@ with app.app_context():
 #############################
 
 
-# @app.route('/login/', methods=['POST'])
-# def login():
-#     data = request.get_json()
-#     email = data.get('email')
-#     senha = data.get('senha')
+@app.route('/login/', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    senha = data.get('senha')
 
-#     # email padrão -> admin@admin.com, senha padrão -> admin123
-#     user = User.query.filter_by(email=email).first()
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
 
-#     if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-#         # Credenciais válidas, crie um token JWT
-#         access_token = create_access_token(identity=email)
-#         return jsonify({'access_token': access_token}), 200
-#     else:
-#         return jsonify({'message': 'Credenciais inválidas.'}), 401
-#         # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-#         # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
+    senha = data.get('senha')
+
+    # email padrão -> admin@admin.com, senha padrão -> admin123
+    user = User.query.filter_by(email=email).first()
+
+    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+        # Credenciais válidas, crie um token JWT
+        access_token = create_access_token(identity=email)
+        return jsonify({'access_token': access_token}), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas.'}), 401
+        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
+        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
 
 
 # @app.route('/loginmongo/', methods=['POST'])
@@ -356,7 +434,7 @@ def consulta_teste():
         query = ''' SELECT 
                         sub.ref_bacen,
                         sub.nu_identificador,
-                        string_agg(concat(sub.latitude, ',', sub.longitude), '/') as coordenadas,
+                        ARRAY_TO_STRING(ARRAY_AGG(concat(sub.latitude, ',', sub.longitude) ORDER BY sub.nu_ponto), '/') as coordenadas,
                         oce.inicio_plantio,
                         oce.final_plantio,
                         oce.data_vencimento,
@@ -402,17 +480,23 @@ def consulta_teste():
         if data['altitude'] is not None:
             query += f" AND glebas.altitude = {data['altitude']}"
         if data['inicio_plantio'] is not None:
-            query += f" AND operacao_credito_estadual.inicio_plantio = {data['inicio_plantio']}"
+            query += f" AND oce.inicio_plantio = '{data['inicio_plantio']}'"
+        if data['descricao_solo'] is not None:
+            query += f" AND solo.descricao = '{data['descricao_solo']}'"
+        if data['descricao_evento'] is not None:
+            query += f" AND evento_climatico.descricao = '{data['descricao_evento']}'"
+        if data['descricao_cultiva'] is not None:
+            query += f" AND ciclo_cultivar.descricao = '{data['descricao_cultiva']}'"
         if data['final_plantio'] is not None:
-            query += f" AND operacao_credito_estadual.final_plantio = {data['final_plantio']}"
+            query += f" AND oce.final_plantio = '{data['final_plantio']}'"
         if data['inicio_colheita'] is not None:
-            query += f" AND operacao_credito_estadual.inicio_colheita = {data['inicio_colheita']}"
+            query += f" AND oce.inicio_colheita = '{data['inicio_colheita']}'"
         if data['final_colheita'] is not None:
-            query += f" AND operacao_credito_estadual.final_colheita = {data['final_colheita']}"
+            query += f" AND oce.final_colheita = '{data['final_colheita']}'"
         if data['descricao_grao'] is not None:
-            query += f" AND grao.descricao = {data['descricao_grao']}"
+            query += f" AND grao.descricao = '{data['descricao_grao']}'"
         if data['descricao_producao'] is not None:
-            query += f" AND ciclo_producao.descricao = {data['descricao_producao']}"
+            query += f" AND ciclo_producao.descricao = '{data['descricao_producao']}'"
         if data['descricao_irrigacao'] is not None:
             query += f" AND irrigacao.descricao = {data['descricao_irrigacao']}"
 
