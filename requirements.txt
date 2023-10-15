@@ -7,3 +7,4 @@ geoalchemy2
 psycopg2
 Flask-JWT-Extended
 SQLAlchemy
+pymongo
