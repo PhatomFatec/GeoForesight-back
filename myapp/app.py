@@ -154,6 +154,14 @@ class empreendimento(db.Model):
     modalidade = db.Column(db.String(255), nullable=False)
     idproduto = db.Column(db.Integer, db.ForeignKey(
         'produtos.idproduto'), nullable=False)
+    
+
+class cooperados(db.Model):
+     ref_bacen = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
+     nu_ordem = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
+     valor_parcela = db.Column(db.Double)
+     cpf = db.Column(db.String(255))
+
 
 
 class User(db.Model):
