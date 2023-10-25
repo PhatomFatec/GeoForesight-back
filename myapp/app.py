@@ -24,7 +24,7 @@ jwt = JWTManager(app)
 CORS(app)
 
 # Configurações do banco de dados PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:dexter@localhost/geodbnovo'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://novo_usuario:root@localhost/postgres'
 db = SQLAlchemy(app)
 
 # Defina o modelo para a tabela "table"
@@ -50,9 +50,9 @@ db = SQLAlchemy(app)
 
 
 class Table(db.Model):
-    tablename = 'table'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
+   tablename = 'table'
+   id = db.Column(db.Integer, primary_key=True)
+   name = db.Column(db.String(255), nullable=False)
 
 class clima(db.Model):
     idClima = db.Column(db.Integer, primary_key=True, nullable=False)
@@ -165,13 +165,25 @@ class cooperados(db.Model):
 
 
 class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nome = db.Column(db.String(255), unique=True, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     senha = db.Column(db.String(255), nullable=False)
 
+    termos = db.relationship('Termos', backref='user')
 
-with app.app_context():
-    db.create_all()
+class Termos(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    data = db.Column(db.String(255), unique=True, nullable=False)
+    termo = db.Column(db.String(255), unique=True, nullable=False)
+    flag = db.Column(db.String(255), unique=True, nullable=False)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id')) 
+
+
+# create tables
+# with app.app_context():
+#    db.create_all()
 
 
 #############################
@@ -183,84 +195,6 @@ with app.app_context():
 def login():
     data = request.get_json()
     email = data.get('email')
-    senha = data.get('senha')
-
-    # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
-    senha = data.get('senha')
-
-    # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
-    senha = data.get('senha')
-
-    # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
-    senha = data.get('senha')
-
-    # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
-    senha = data.get('senha')
-
-    # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
-    senha = data.get('senha')
-
-    # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
     senha = data.get('senha')
 
     # email padrão -> admin@admin.com, senha padrão -> admin123
@@ -411,7 +345,7 @@ def consulta_teste():
         # Criar uma conexão com o banco de dados
         # Substitua pela sua string de conexão
         engine = create_engine(
-            'postgresql://postgres:dexter@localhost/geodbnovo')
+            'postgresql://novo_usuario:root@localhost/postgres')
         conn = engine.connect()
 
         # Executar a query
