@@ -24,7 +24,7 @@ jwt = JWTManager(app)
 CORS(app)
 
 # Configurações do banco de dados PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://novo_usuario:root@localhost/postgres'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:dexter@localhost/geodbnovo'
 db = SQLAlchemy(app)
 
 # Defina o modelo para a tabela "table"
@@ -50,9 +50,9 @@ db = SQLAlchemy(app)
 
 
 class Table(db.Model):
-   tablename = 'table'
-   id = db.Column(db.Integer, primary_key=True)
-   name = db.Column(db.String(255), nullable=False)
+    tablename = 'table'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
 
 class clima(db.Model):
     idClima = db.Column(db.Integer, primary_key=True, nullable=False)
@@ -180,10 +180,8 @@ class Termos(db.Model):
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id')) 
 
-
-# create tables
-# with app.app_context():
-#    db.create_all()
+with app.app_context():
+    db.create_all()
 
 
 #############################
@@ -345,7 +343,7 @@ def consulta_teste():
         # Criar uma conexão com o banco de dados
         # Substitua pela sua string de conexão
         engine = create_engine(
-            'postgresql://novo_usuario:root@localhost/postgres')
+            'postgresql://postgres:dexter@localhost/geodbnovo')
         conn = engine.connect()
 
         # Executar a query
