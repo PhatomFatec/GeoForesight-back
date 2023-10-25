@@ -1,3 +1,4 @@
+import datetime
 import bcrypt
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
@@ -169,8 +170,9 @@ class User(db.Model):
     nome = db.Column(db.String(255), unique=True, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     senha = db.Column(db.String(255), nullable=False)
+    aceitacao = db.Column(db.Boolean, nullable=False)
 
-    termos = db.relationship('Termos', backref='user')
+    termos_id = db.relationship('Termos', backref='user')
 
 class Termos(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -182,6 +184,42 @@ class Termos(db.Model):
 
 with app.app_context():
     db.create_all()
+
+#############################
+###### cadastro  ############
+#############################
+
+@app.route('/cadastro/', methods=['POST'])
+def cadastro():
+    data = request.get_json()
+
+    nome = data.get('nome')
+    email = data.get('email')
+    senha = data.get('senha')
+    aceitacao = data.get('aceitacao')
+    data = datetime.now()
+
+    termos_id = data.get('termos_id') # definir como o sistema vai funcionar para ver como será o id do termo, ex.: se sera puxado de forma dinamica
+    
+   
+    # Gerar um salt aleatório
+    salt = bcrypt.gensalt()
+
+    # Criptografar a senha com o salt
+    hashed_password = bcrypt.hashpw(senha.encode('utf-8'), salt)
+
+    # Imprimir o valor de hash
+    print(hashed_password.decode('utf-8'))
+
+    novo_dado = User(nome=nome, email=email, senha=hashed_password, aceitacao=aceitacao, data=data, termos_id=termos_id)
+
+    try:
+        db.session.add(novo_dado)
+        db.session.commit()
+        return jsonify({'Dado salvo com sucesso'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'Dado salvo com sucesso'}), 500
 
 
 #############################
