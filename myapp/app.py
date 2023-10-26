@@ -1,4 +1,5 @@
 import datetime
+import time
 import bcrypt
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
@@ -185,8 +186,10 @@ class Termos(db.Model):
 with app.app_context():
     db.create_all()
 
+
+
 #############################
-###### cadastro  ############
+######## cadastro  ##########
 #############################
 
 @app.route('/cadastro/', methods=['POST'])
@@ -216,10 +219,18 @@ def cadastro():
     try:
         db.session.add(novo_dado)
         db.session.commit()
-        return jsonify({'Dado salvo com sucesso'}), 201
+        # Atrasar o login por 30 segundos
+        time.sleep(30)
+
+        # Realizar o login após o atraso
+        login(email_in=email, senha_in=hashed_password)
+
+        return jsonify({'mensagem': 'Dado salvo com sucesso e login feito!'}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'Dado salvo com sucesso'}), 500
+        return jsonify({'erro': 'Falha ao salvar os dados.'}), 500
+
+    
 
 
 #############################
@@ -228,10 +239,15 @@ def cadastro():
 
 
 @app.route('/login/', methods=['POST'])
-def login():
-    data = request.get_json()
-    email = data.get('email')
-    senha = data.get('senha')
+def login(email_in=None, senha_in=None):
+    
+    if email != None | senha != None:
+        email = email_in
+        senha = senha_in
+    else: 
+        data = request.get_json()
+        email = data.get('email')
+        senha = data.get('senha')
 
     # email padrão -> admin@admin.com, senha padrão -> admin123
     user = User.query.filter_by(email=email).first()
@@ -271,6 +287,7 @@ def login():
 
 #     # Feche a conexão com o MongoDB
 #     client.close()
+
 
 
 #############################
@@ -417,6 +434,7 @@ def consulta_teste():
         # Tratamento de erro: retorna uma mensagem de erro genérica em caso de exceção
 
         return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
+
 
 
 # main
