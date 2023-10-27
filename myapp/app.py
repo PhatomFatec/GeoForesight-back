@@ -170,33 +170,28 @@ db = SQLAlchemy(app)
 
 
 
-class user(db.Model):
-    id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
-    nome = db.Column(db.String(255), unique=True, nullable=False)
-    email = db.Column(db.String(255), unique=True, nullable=False)
-    senha = db.Column(db.String(255), nullable=False)
-    rel_ace_user = db.Column(db.Integer, db.ForeignKey('aceitacao_usuario.id_user')) 
-
-
 class aceitacao_usuario(db.Model):
-    id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     id_user = db.Column(db.Integer, db.ForeignKey('user.id')) 
     id_termo = db.Column(db.Integer, db.ForeignKey('termos.id')) 
     aceitacao_padrao = db.Column(db.Boolean, nullable=False)
     aceitacao_email = db.Column(db.Boolean, nullable=False)
     data_aceitacao = db.Column(db.Date, nullable=False)
 
-    glebas = db.relationship('user', backref='aceitacao_usuario')
-    glebas = db.relationship('termos', backref='aceitacao_usuario')
+class user(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
+    nome = db.Column(db.String(255), unique=True, nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    senha = db.Column(db.String(255), nullable=False)
 
+    rel_ace_user  = db.relationship('aceitacao_usuario', backref='user', lazy=True)
 
 class termos(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
     data = db.Column(db.String(255), unique=True, nullable=False)
     termo = db.Column(db.String(255), unique=True, nullable=False)
 
-    rel_ace_user = db.Column(db.Integer, db.ForeignKey('aceitacao_usuario.id_termo')) 
-
+    rel_ace_user = db.relationship('aceitacao_usuario', backref='termos', lazy=True)
 
 
 with app.app_context():
@@ -217,7 +212,7 @@ def cadastro():
     nome = data.get('nome')
     email = data.get('email')
     senha = data.get('senha')
-    aceitacao = data.get('aceitacao')
+    # aceitacao = data.get('aceitacao')
     # data_atual = datetime.now()
 
     termos_id = data.get('termos_id') # definir como o sistema vai funcionar para ver como será o id do termo, ex.: se sera puxado de forma dinamica
@@ -233,7 +228,7 @@ def cadastro():
     # Imprimir o valor de hash
     print(hashed_password)
 
-    novo_dado = user(id=id, nome=nome, email=email, senha=hashed_password, aceitacao=aceitacao)
+    novo_dado = user(id=id, nome=nome, email=email, senha=hashed_password)
 
     try:
         db.session.add(novo_dado)
