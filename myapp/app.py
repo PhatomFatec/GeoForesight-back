@@ -245,7 +245,7 @@ def cadastro():
 #############################
 ###### login routes #########
 #############################
-
+#
 
 @app.route('/login/', methods=['POST'])
 def login(email_in=None, senha_in=None):
