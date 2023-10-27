@@ -1,3 +1,5 @@
+from datetime import datetime
+import time
 import bcrypt
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
@@ -5,10 +7,14 @@ from flask_cors import CORS
 from geoalchemy2 import Geography
 import requests
 from sqlalchemy import create_engine, text
+import os
+from dotenv import load_dotenv
 
 from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, get_jwt_identity
 )
+
+load_dotenv()
 
 
 # from pymongo.mongo_client import MongoClient
@@ -24,7 +30,7 @@ jwt = JWTManager(app)
 CORS(app)
 
 # Configurações do banco de dados PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:dexter@localhost/geodbnovo'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('url_heroku')
 db = SQLAlchemy(app)
 
 # Defina o modelo para a tabela "table"
@@ -49,129 +55,185 @@ db = SQLAlchemy(app)
 #############################
 
 
-class Table(db.Model):
-    tablename = 'table'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
+# class Table(db.Model):
+#     tablename = 'table'
+#     id = db.Column(db.Integer, primary_key=True)
+#     name = db.Column(db.String(255), nullable=False)
 
-class clima(db.Model):
-    idClima = db.Column(db.Integer, primary_key=True, nullable=False)
-    descricao = db.Column(db.String(255))
-    operacao_credito_estadual = db.relationship(
-        'operacao_credito_estadual', backref='clima')
-
-
-class irrigacao(db.Model):
-    idirrigacao = db.Column(db.Integer, primary_key=True,
-                            nullable=False,  autoincrement=False)
-    descricao = db.Column(db.String(255))
-    operacao_credito_estadual = db.relationship(
-        'operacao_credito_estadual', backref='irrigacao')
-
-class solo(db.Model):
-    idSolo = db.Column(db.Integer, primary_key=True, nullable=False)
-    descricao = db.Column(db.String(255))
-    operacao_credito_estadual = db.relationship(
-        'operacao_credito_estadual', backref='solo')
+# class clima(db.Model):
+#     idClima = db.Column(db.Integer, primary_key=True, nullable=False)
+#     descricao = db.Column(db.String(255))
+#     operacao_credito_estadual = db.relationship(
+#         'operacao_credito_estadual', backref='clima')
 
 
-class ciclo_producao(db.Model):
-    idciclo = db.Column(db.Integer, primary_key=True,
-                        nullable=False,  autoincrement=False)
-    descricao = db.Column(db.String(255))
-    operacao_credito_estadual = db.relationship(
-        'operacao_credito_estadual', backref='ciclo_producao')
+# class irrigacao(db.Model):
+#     idirrigacao = db.Column(db.Integer, primary_key=True,
+#                             nullable=False,  autoincrement=False)
+#     descricao = db.Column(db.String(255))
+#     operacao_credito_estadual = db.relationship(
+#         'operacao_credito_estadual', backref='irrigacao')
+
+# class solo(db.Model):
+#     idSolo = db.Column(db.Integer, primary_key=True, nullable=False)
+#     descricao = db.Column(db.String(255))
+#     operacao_credito_estadual = db.relationship(
+#         'operacao_credito_estadual', backref='solo')
 
 
-class grao(db.Model):
-    idgrao = db.Column(db.Integer, primary_key=True,
-                       nullable=False,  autoincrement=False)
-    descricao = db.Column(db.String(255))
-    operacao_credito_estadual = db.relationship(
-        'operacao_credito_estadual', backref='grao')
+# class ciclo_producao(db.Model):
+#     idciclo = db.Column(db.Integer, primary_key=True,
+#                         nullable=False,  autoincrement=False)
+#     descricao = db.Column(db.String(255))
+#     operacao_credito_estadual = db.relationship(
+#         'operacao_credito_estadual', backref='ciclo_producao')
 
 
-class evento_climatico(db.Model):
-    idEvento = db.Column(db.Integer, primary_key=True, nullable=False)
-    descricao = db.Column(db.String(255))
-    operacao_credito_estadual = db.relationship(
-        'operacao_credito_estadual', backref='evento_climatico')
+# class grao(db.Model):
+#     idgrao = db.Column(db.Integer, primary_key=True,
+#                        nullable=False,  autoincrement=False)
+#     descricao = db.Column(db.String(255))
+#     operacao_credito_estadual = db.relationship(
+#         'operacao_credito_estadual', backref='grao')
 
 
-class produtos(db.Model):
-    idproduto = db.Column(db.Integer, primary_key=True,
-                          nullable=False,  autoincrement=False)
-    nome = db.Column(db.String(255))
-    Empreendimento = db.Relationship('empreendimento', backref='produtos')
+# class evento_climatico(db.Model):
+#     idEvento = db.Column(db.Integer, primary_key=True, nullable=False)
+#     descricao = db.Column(db.String(255))
+#     operacao_credito_estadual = db.relationship(
+#         'operacao_credito_estadual', backref='evento_climatico')
 
 
-class operacao_credito_estadual(db.Model):
-    ref_bacen = db.Column(db.Integer, primary_key=True,
-                          unique=True, nullable=False,  autoincrement=False)
-    nu_ordem = db.Column(db.Integer, primary_key=True,
-                         unique=True, nullable=False,  autoincrement=False)
-    inicio_plantio = db.Column(db.Date, nullable=False)
-    final_plantio = db.Column(db.Date, nullable=False)
-    final_colheita = db.Column(db.Date, nullable=False)
-    inicio_colheita = db.Column(db.Date, nullable=False)
-    data_liberacao = db.Column(db.Date, nullable=False)
-    data_vencimento = db.Column(db.Date, nullable=False)
-    idciclo = db.Column(db.Integer, db.ForeignKey('ciclo_producao.idciclo'))
-    idteste = db.Column(
-        db.Integer, db.ForeignKey('empreendimento.idteste'))
-    idClima = db.Column(db.Integer, db.ForeignKey('clima.idClima'))
-    idEvento = db.Column(db.Integer, db.ForeignKey('evento_climatico.idEvento'))
-    idgrao = db.Column(db.Integer, db.ForeignKey('grao.idgrao'))
-    idSolo = db.Column(db.Integer, db.ForeignKey('solo.idSolo'))
-    idirrigacao = db.Column(db.Integer, db.ForeignKey('irrigacao.idirrigacao'))
-    idempreendimento = db.Column(
-        db.Integer, db.ForeignKey('empreendimento.idempreendimento'))
-    glebas = db.relationship('glebas', backref='operacao_credito_estadual')
-
-    table_args = (
-        db.PrimaryKeyConstraint('ref_bacen', 'nu_ordem'),
-    )
+# class produtos(db.Model):
+#     idproduto = db.Column(db.Integer, primary_key=True,
+#                           nullable=False,  autoincrement=False)
+#     nome = db.Column(db.String(255))
+#     Empreendimento = db.Relationship('empreendimento', backref='produtos')
 
 
-class glebas(db.Model):
-    idgleba = db.Column(db.Integer, primary_key=True,
-                        nullable=False,  autoincrement=False)
-    coordenadas = db.Column(
-        Geography(geometry_type='POINT', srid=4326), nullable=False)
-    altitude = db.Column(db.Double)
-    nu_ponto = db.Column(db.Integer, nullable=False)
-    ref_bacen = db.Column(db.Integer, db.ForeignKey(
-        'operacao_credito_estadual.ref_bacen'))
-    nu_ordem = db.Column(db.Integer, db.ForeignKey(
-        'operacao_credito_estadual.nu_ordem'))
+# class operacao_credito_estadual(db.Model):
+#     ref_bacen = db.Column(db.Integer, primary_key=True,
+#                           unique=True, nullable=False,  autoincrement=False)
+#     nu_ordem = db.Column(db.Integer, primary_key=True,
+#                          unique=True, nullable=False,  autoincrement=False)
+#     inicio_plantio = db.Column(db.Date, nullable=False)
+#     final_plantio = db.Column(db.Date, nullable=False)
+#     final_colheita = db.Column(db.Date, nullable=False)
+#     inicio_colheita = db.Column(db.Date, nullable=False)
+#     data_liberacao = db.Column(db.Date, nullable=False)
+#     data_vencimento = db.Column(db.Date, nullable=False)
+#     idciclo = db.Column(db.Integer, db.ForeignKey('ciclo_producao.idciclo'))
+#     idteste = db.Column(
+#         db.Integer, db.ForeignKey('empreendimento.idteste'))
+#     idClima = db.Column(db.Integer, db.ForeignKey('clima.idClima'))
+#     idEvento = db.Column(db.Integer, db.ForeignKey('evento_climatico.idEvento'))
+#     idgrao = db.Column(db.Integer, db.ForeignKey('grao.idgrao'))
+#     idSolo = db.Column(db.Integer, db.ForeignKey('solo.idSolo'))
+#     idirrigacao = db.Column(db.Integer, db.ForeignKey('irrigacao.idirrigacao'))
+#     idempreendimento = db.Column(
+#         db.Integer, db.ForeignKey('empreendimento.idempreendimento'))
+#     glebas = db.relationship('glebas', backref='operacao_credito_estadual')
+
+#     table_args = (
+#         db.PrimaryKeyConstraint('ref_bacen', 'nu_ordem'),
+#     )
 
 
-class empreendimento(db.Model):
-    idteste = db.Column(db.Integer, primary_key=True, nullable=False)
-    idempreendimento = db.Column(db.BigInteger, nullable=False)
-    finalidade = db.Column(db.String(255))
-    cesta = db.Column(db.String(255), nullable=False)
-    modalidade = db.Column(db.String(255), nullable=False)
-    idproduto = db.Column(db.Integer, db.ForeignKey(
-        'produtos.idproduto'), nullable=False)
+# class glebas(db.Model):
+#     idgleba = db.Column(db.Integer, primary_key=True,
+#                         nullable=False,  autoincrement=False)
+#     coordenadas = db.Column(
+#         Geography(geometry_type='POINT', srid=4326), nullable=False)
+#     altitude = db.Column(db.Double)
+#     nu_ponto = db.Column(db.Integer, nullable=False)
+#     ref_bacen = db.Column(db.Integer, db.ForeignKey(
+#         'operacao_credito_estadual.ref_bacen'))
+#     nu_ordem = db.Column(db.Integer, db.ForeignKey(
+#         'operacao_credito_estadual.nu_ordem'))
+
+
+# class empreendimento(db.Model):
+#     idteste = db.Column(db.Integer, primary_key=True, nullable=False)
+#     idempreendimento = db.Column(db.BigInteger, nullable=False)
+#     finalidade = db.Column(db.String(255))
+#     cesta = db.Column(db.String(255), nullable=False)
+#     modalidade = db.Column(db.String(255), nullable=False)
+#     idproduto = db.Column(db.Integer, db.ForeignKey(
+#         'produtos.idproduto'), nullable=False)
     
 
-class cooperados(db.Model):
-     ref_bacen = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
-     nu_ordem = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
-     valor_parcela = db.Column(db.Double)
-     cpf = db.Column(db.String(255))
+# class cooperados(db.Model):
+#      ref_bacen = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
+#      nu_ordem = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
+#      valor_parcela = db.Column(db.Double)
+#      cpf = db.Column(db.String(255))
 
 
 
 class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nome = db.Column(db.String(255), unique=True, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     senha = db.Column(db.String(255), nullable=False)
+    aceitacao = db.Column(db.Boolean, nullable=False)
 
+    # termos_id = db.relationship('Termos', backref='user')
+
+class Termos(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    data = db.Column(db.String(255), unique=True, nullable=False)
+    termo = db.Column(db.String(255), unique=True, nullable=False)
+    flag = db.Column(db.String(255), unique=True, nullable=False)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id')) 
 
 with app.app_context():
     db.create_all()
+
+
+
+#############################
+######## cadastro  ##########
+#############################
+
+@app.route('/cadastro/', methods=['POST'])
+def cadastro():
+    data = request.get_json()
+
+    id = data.get('id')
+    nome = data.get('nome')
+    email = data.get('email')
+    senha = data.get('senha')
+    aceitacao = data.get('aceitacao')
+    # data_atual = datetime.now()
+
+    termos_id = data.get('termos_id') # definir como o sistema vai funcionar para ver como será o id do termo, ex.: se sera puxado de forma dinamica
+    
+   
+    # Gerar um salt aleatório
+    salt = bcrypt.gensalt()
+
+    # Criptografar a senha com o salt
+    hashed_password = bcrypt.hashpw(senha.encode('utf-8'), salt)
+    hashed_password = hashed_password.decode('utf-8')
+
+    # Imprimir o valor de hash
+    print(hashed_password)
+
+    novo_dado = User(id=id, nome=nome, email=email, senha=hashed_password, aceitacao=aceitacao)
+
+    try:
+        db.session.add(novo_dado)
+        db.session.commit()
+        # Atrasar o login por 30 segundos
+        time.sleep(3)
+
+        return jsonify({'mensagem': 'Dado salvo com sucesso!'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'erro': 'Falha ao salvar os dados.'}), 500
+
+    
 
 
 #############################
@@ -180,88 +242,15 @@ with app.app_context():
 
 
 @app.route('/login/', methods=['POST'])
-def login():
-    data = request.get_json()
-    email = data.get('email')
-    senha = data.get('senha')
-
-    # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
-    senha = data.get('senha')
-
-    # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
-    senha = data.get('senha')
-
-    # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
-    senha = data.get('senha')
-
-    # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
-    senha = data.get('senha')
-
-    # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
-    senha = data.get('senha')
-
-    # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
-
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
-        # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
-        return jsonify({'access_token': access_token}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas.'}), 401
-        # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
-        # retorna uma resposta JSON com uma mensagem de "Credenciais inválidas" e um código de status HTTP 401 (Não Autorizado).
-    senha = data.get('senha')
+def login(email_in=None, senha_in=None):
+    
+    if email_in != None or senha_in != None:
+        email = email_in
+        senha = senha_in
+    else: 
+        data = request.get_json()
+        email = data.get('email')
+        senha = data.get('senha')
 
     # email padrão -> admin@admin.com, senha padrão -> admin123
     user = User.query.filter_by(email=email).first()
@@ -301,6 +290,7 @@ def login():
 
 #     # Feche a conexão com o MongoDB
 #     client.close()
+
 
 
 #############################
@@ -410,8 +400,7 @@ def consulta_teste():
 						ciclo_cultivar.descricao"""
         # Criar uma conexão com o banco de dados
         # Substitua pela sua string de conexão
-        engine = create_engine(
-            'postgresql://postgres:dexter@localhost/geodbnovo')
+        engine = create_engine(os.getenv('url_heroku'))
         conn = engine.connect()
 
         # Executar a query
@@ -447,6 +436,7 @@ def consulta_teste():
         # Tratamento de erro: retorna uma mensagem de erro genérica em caso de exceção
 
         return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
+
 
 
 # main
