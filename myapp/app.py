@@ -174,25 +174,33 @@ db = SQLAlchemy(app)
 
 
 
-class User(db.Model):
+class aceitacao_usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_user = db.Column(db.Integer, db.ForeignKey('user.id')) 
+    id_termo = db.Column(db.Integer, db.ForeignKey('termos.id')) 
+    aceitacao_padrao = db.Column(db.Boolean, nullable=False)
+    aceitacao_email = db.Column(db.Boolean, nullable=False)
+    data_aceitacao = db.Column(db.Date, nullable=False)
+
+class user(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
     nome = db.Column(db.String(255), unique=True, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     senha = db.Column(db.String(255), nullable=False)
-    aceitacao = db.Column(db.Boolean, nullable=False)
 
-    # termos_id = db.relationship('Termos', backref='user')
+    rel_ace_user  = db.relationship('aceitacao_usuario', backref='user', lazy=True)
 
-class Termos(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+class termos(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
     data = db.Column(db.String(255), unique=True, nullable=False)
     termo = db.Column(db.String(255), unique=True, nullable=False)
-    flag = db.Column(db.String(255), unique=True, nullable=False)
 
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id')) 
+    rel_ace_user = db.relationship('aceitacao_usuario', backref='termos', lazy=True)
+
 
 with app.app_context():
     db.create_all()
+
 
 
 
@@ -208,7 +216,7 @@ def cadastro():
     nome = data.get('nome')
     email = data.get('email')
     senha = data.get('senha')
-    aceitacao = data.get('aceitacao')
+    # aceitacao = data.get('aceitacao')
     # data_atual = datetime.now()
 
     termos_id = data.get('termos_id') # definir como o sistema vai funcionar para ver como será o id do termo, ex.: se sera puxado de forma dinamica
@@ -224,7 +232,7 @@ def cadastro():
     # Imprimir o valor de hash
     print(hashed_password)
 
-    novo_dado = User(id=id, nome=nome, email=email, senha=hashed_password, aceitacao=aceitacao)
+    novo_dado = user(id=id, nome=nome, email=email, senha=hashed_password)
 
     try:
         db.session.add(novo_dado)
@@ -257,7 +265,7 @@ def login(email_in=None, senha_in=None):
         senha = data.get('senha')
 
     # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
+    user = user.query.filter_by(email=email).first()
 
     if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
         # Credenciais válidas, crie um token JWT
