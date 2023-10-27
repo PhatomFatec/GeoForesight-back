@@ -170,27 +170,39 @@ db = SQLAlchemy(app)
 
 
 
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+class user(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
     nome = db.Column(db.String(255), unique=True, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     senha = db.Column(db.String(255), nullable=False)
-    aceitacao = db.Column(db.Boolean, nullable=False)
+    rel_ace_user = db.Column(db.Integer, db.ForeignKey('aceitacao_usuario.id_user')) 
 
-    # termos_id = db.relationship('Termos', backref='user')
 
-class Termos(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+class aceitacao_usuario(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
+    id_user = db.Column(db.Integer, db.ForeignKey('user.id')) 
+    id_termo = db.Column(db.Integer, db.ForeignKey('termos.id')) 
+    aceitacao_padrao = db.Column(db.Boolean, nullable=False)
+    aceitacao_email = db.Column(db.Boolean, nullable=False)
+    data_aceitacao = db.Column(db.Date, nullable=False)
+
+    glebas = db.relationship('user', backref='aceitacao_usuario')
+    glebas = db.relationship('termos', backref='aceitacao_usuario')
+
+
+class termos(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
     data = db.Column(db.String(255), unique=True, nullable=False)
     termo = db.Column(db.String(255), unique=True, nullable=False)
-    flag = db.Column(db.String(255), unique=True, nullable=False)
 
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id')) 
+    rel_ace_user = db.Column(db.Integer, db.ForeignKey('aceitacao_usuario.id_termo')) 
+
+
 
 with app.app_context():
     db.create_all()
 
-#
+
 
 
 #############################
