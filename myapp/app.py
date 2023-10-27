@@ -1,3 +1,4 @@
+
 from datetime import datetime
 import time
 import bcrypt
@@ -10,6 +11,7 @@ from sqlalchemy import create_engine, text
 import os
 from dotenv import load_dotenv
 
+
 from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, get_jwt_identity
 )
@@ -20,7 +22,6 @@ load_dotenv()
 # from pymongo.mongo_client import MongoClient
 # from pymongo.server_api import ServerApi
 
-
 app = Flask(__name__)
 
 app.config['JWT_SECRET_KEY'] = 'your-secret-key'
@@ -30,7 +31,10 @@ jwt = JWTManager(app)
 CORS(app)
 
 # Configurações do banco de dados PostgreSQL
+
+
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('url_heroku')
+
 db = SQLAlchemy(app)
 
 # Defina o modelo para a tabela "table"
@@ -323,6 +327,9 @@ def consulta_teste():
                         oce.data_vencimento,
                         oce.inicio_colheita,
                         oce.final_colheita,
+						oce.estado,
+						mg.nome as municipio,
+                        pr.nome as produto,
                         irrigacao.descricao as descricao_irrigacao,
                         ciclo_producao.descricao as descricao_producao,
                         grao.descricao as descricao_grao,
@@ -349,8 +356,11 @@ def consulta_teste():
                     ) as sub
                     JOIN operacao_credito_estadual oce ON sub.ref_bacen = oce.ref_bacen
                     JOIN irrigacao ON irrigacao.idirrigacao = oce.idirrigacao
+					LEFT JOIN municipio_glebas mg ON mg.ref_bacen = oce.ref_bacen
                     JOIN grao ON grao.idgrao = oce.idgrao
                     JOIN ciclo_producao ON ciclo_producao.idciclo = oce.idciclo
+                    LEFT JOIN empreendimento em on oce.idempreendimento = em.idempreendimento
+					LEFT JOIN produtos pr on em.idproduto = pr.idproduto
 					LEFT JOIN solo on solo.idsolo = oce.idsolo
 					LEFT JOIN evento_climatico ON evento_climatico.idevento = oce.idevento
 					LEFT JOIN ciclo_cultivar on ciclo_cultivar.idcultivar = oce.idcultivar
@@ -363,7 +373,7 @@ def consulta_teste():
         if data['altitude'] is not None:
             query += f" AND glebas.altitude = {data['altitude']}"
         if data['inicio_plantio'] is not None:
-            query += f" AND oce.inicio_plantio = '{data['inicio_plantio']}'"
+            query += f" AND oce.inicio_plantio >= '{data['inicio_plantio']}'"
         if data['descricao_solo'] is not None:
             query += f" AND solo.descricao = '{data['descricao_solo']}'"
         if data['descricao_evento'] is not None:
@@ -371,17 +381,23 @@ def consulta_teste():
         if data['descricao_cultiva'] is not None:
             query += f" AND ciclo_cultivar.descricao = '{data['descricao_cultiva']}'"
         if data['final_plantio'] is not None:
-            query += f" AND oce.final_plantio = '{data['final_plantio']}'"
+            query += f" AND oce.final_plantio <= '{data['final_plantio']}'"
         if data['inicio_colheita'] is not None:
-            query += f" AND oce.inicio_colheita = '{data['inicio_colheita']}'"
+            query += f" AND oce.inicio_colheita >= '{data['inicio_colheita']}'"
         if data['final_colheita'] is not None:
-            query += f" AND oce.final_colheita = '{data['final_colheita']}'"
+            query += f" AND oce.final_colheita <= '{data['final_colheita']}'"
         if data['descricao_grao'] is not None:
             query += f" AND grao.descricao = '{data['descricao_grao']}'"
         if data['descricao_producao'] is not None:
             query += f" AND ciclo_producao.descricao = '{data['descricao_producao']}'"
+        if data['municipio'] is not None:
+            query += f" AND mg.nome = '{data['municipio']}'"
+        if data['estado'] is not None:
+           query += f" AND oce.estado = '{data['estado']}'"
+        if data['produto'] is not None:
+           query += f" AND pr.nome = '{data['produto']}'"
         if data['descricao_irrigacao'] is not None:
-            query += f" AND irrigacao.descricao = {data['descricao_irrigacao']}"
+            query += f" AND irrigacao.descricao = '{data['descricao_irrigacao']}'"
 
         group = """ 
                     GROUP BY 
@@ -391,16 +407,22 @@ def consulta_teste():
                         oce.data_vencimento,
                         oce.inicio_colheita,
                         oce.final_colheita,
+						oce.estado,
+						mg.nome,
                         irrigacao.descricao,
                         ciclo_producao.descricao ,
                         grao.descricao,
                         sub.nu_identificador,
 						solo.descricao,
 						evento_climatico.descricao,
-						ciclo_cultivar.descricao"""
+						ciclo_cultivar.descricao,
+                        pr.nome"""
         # Criar uma conexão com o banco de dados
         # Substitua pela sua string de conexão
+
+
         engine = create_engine(os.getenv('url_heroku'))
+
         conn = engine.connect()
 
         # Executar a query
@@ -423,7 +445,10 @@ def consulta_teste():
         "descricao_producao": resultado.descricao_producao,
         "descricao_solo": resultado.descricao_solo, 
         "descricao_evento": resultado.descricao_evento, 
-        "descricao_cultiva": resultado.descricao_cultiva  
+        "descricao_cultiva": resultado.descricao_cultiva,
+        "estado": resultado.estado,
+        "municipio": resultado.municipio,
+        "produto": resultado.produto
     }
             lista_resultados.append(resultado_dict)
 
