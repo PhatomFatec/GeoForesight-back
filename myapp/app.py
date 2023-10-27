@@ -24,7 +24,7 @@ jwt = JWTManager(app)
 CORS(app)
 
 # Configurações do banco de dados PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://wymzwaqryrdrgq:b8c4f37b304a2e11ae71665287ed4cb32b1c49adc9abcde060ad6628e13cb0b3@ec2-44-215-1-253.compute-1.amazonaws.com:5432/d9mg7d69o4e5c3'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'STRING DE CONEXÃO COM O BD'
 db = SQLAlchemy(app)
 
 # Defina o modelo para a tabela "table"
@@ -512,7 +512,7 @@ def consulta_teste():
         # Criar uma conexão com o banco de dados
         # Substitua pela sua string de conexão
         engine = create_engine(
-            'postgresql://wymzwaqryrdrgq:b8c4f37b304a2e11ae71665287ed4cb32b1c49adc9abcde060ad6628e13cb0b3@ec2-44-215-1-253.compute-1.amazonaws.com:5432/d9mg7d69o4e5c3')
+            'STRING DE CONEXÃO COM O BD')
         conn = engine.connect()
 
         # Executar a query
