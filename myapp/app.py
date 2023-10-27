@@ -233,7 +233,7 @@ def cadastro():
     # Imprimir o valor de hash
     print(hashed_password)
 
-    novo_dado = User(id=id, nome=nome, email=email, senha=hashed_password, aceitacao=aceitacao)
+    novo_dado = user(id=id, nome=nome, email=email, senha=hashed_password, aceitacao=aceitacao)
 
     try:
         db.session.add(novo_dado)
@@ -266,7 +266,7 @@ def login(email_in=None, senha_in=None):
         senha = data.get('senha')
 
     # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = User.query.filter_by(email=email).first()
+    user = user.query.filter_by(email=email).first()
 
     if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
         # Credenciais válidas, crie um token JWT
