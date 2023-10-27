@@ -212,16 +212,10 @@ with app.app_context():
 def cadastro():
     data = request.get_json()
 
-    id = data.get('id')
     nome = data.get('nome')
     email = data.get('email')
     senha = data.get('senha')
-    # aceitacao = data.get('aceitacao')
-    # data_atual = datetime.now()
-
-    termos_id = data.get('termos_id') # definir como o sistema vai funcionar para ver como será o id do termo, ex.: se sera puxado de forma dinamica
     
-   
     # Gerar um salt aleatório
     salt = bcrypt.gensalt()
 
@@ -232,7 +226,7 @@ def cadastro():
     # Imprimir o valor de hash
     print(hashed_password)
 
-    novo_dado = user(id=id, nome=nome, email=email, senha=hashed_password)
+    novo_dado = user(nome=nome, email=email, senha=hashed_password)
 
     try:
         db.session.add(novo_dado)
