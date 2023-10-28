@@ -3,6 +3,7 @@ from datetime import datetime
 import time
 import bcrypt
 from flask import Flask, jsonify, request
+from sqlalchemy import TEXT
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from geoalchemy2 import Geography
@@ -184,16 +185,16 @@ class aceitacao_usuario(db.Model):
 
 class user(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
-    nome = db.Column(db.String(255), unique=True, nullable=False)
+    nome = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     senha = db.Column(db.String(255), nullable=False)
 
     rel_ace_user  = db.relationship('aceitacao_usuario', backref='user', lazy=True)
 
 class termos(db.Model):
-    id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
-    data = db.Column(db.String(255), unique=True, nullable=False)
-    termo = db.Column(db.String(255), unique=True, nullable=False)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    data = db.Column(db.Date, nullable=False)
+    termo = db.Column(TEXT, unique=True, nullable=False)
 
     rel_ace_user = db.relationship('aceitacao_usuario', backref='termos', lazy=True)
 
@@ -245,7 +246,7 @@ def cadastro():
 #############################
 ###### login routes #########
 #############################
-#
+
 
 @app.route('/login/', methods=['POST'])
 def login(email_in=None, senha_in=None):
@@ -302,6 +303,21 @@ def login(email_in=None, senha_in=None):
 #############################
 ###### General Routes #######
 #############################
+
+
+@app.route('/create_termos/', methods=['POST'])
+def create_termos():
+    dados = request.get_json()
+
+    data = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
+    termo = dados.get('termo')
+
+    new_termo = termos( data=data, termo=termo)
+    db.session.add(new_termo)
+    db.session.commit()
+
+    return jsonify({'message': 'termo criado com sucesso!'}), 201
+
 
 
 # # nova consulta
