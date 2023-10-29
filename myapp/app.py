@@ -3,7 +3,7 @@ from datetime import datetime
 import time
 import bcrypt
 from flask import Flask, jsonify, request
-from sqlalchemy import TEXT
+from sqlalchemy import TEXT,DateTime
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from geoalchemy2 import Geography
@@ -181,7 +181,8 @@ class aceitacao_usuario(db.Model):
     id_termo = db.Column(db.Integer, db.ForeignKey('termos.id')) 
     aceitacao_padrao = db.Column(db.Boolean, nullable=False)
     aceitacao_email = db.Column(db.Boolean, nullable=False)
-    data_aceitacao = db.Column(db.Date, nullable=False)
+    data_aceitacao = db.Column(db.DateTime,default=datetime.utcnow, nullable=False)
+
 
 class user(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
@@ -190,10 +191,10 @@ class user(db.Model):
     senha = db.Column(db.String(255), nullable=False)
 
     rel_ace_user  = db.relationship('aceitacao_usuario', backref='user', lazy=True)
-
+    
 class termos(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    data = db.Column(db.Date, nullable=False)
+    data = db.Column(DateTime, default=datetime.utcnow, nullable=False) 
     termo = db.Column(TEXT, unique=True, nullable=False)
 
     rel_ace_user = db.relationship('aceitacao_usuario', backref='termos', lazy=True)
@@ -201,7 +202,6 @@ class termos(db.Model):
 
 with app.app_context():
     db.create_all()
-
 
 
 
@@ -260,11 +260,11 @@ def login(email_in=None, senha_in=None):
         senha = data.get('senha')
 
     # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = user.query.filter_by(email=email).first()
+    User = user.query.filter_by(email=email).first()
 
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+    if User and bcrypt.checkpw(senha.encode('utf-8'), User.senha.encode('utf-8')):
         # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
+        access_token = create_access_token(identity=User.id)
         return jsonify({'access_token': access_token}), 200
     else:
         return jsonify({'message': 'Credenciais inválidas.'}), 401
@@ -305,7 +305,7 @@ def login(email_in=None, senha_in=None):
 #############################
 
 
-@app.route('/create_termos/', methods=['POST'])
+@app.route('/create_termos', methods=['POST'])
 def create_termos():
     dados = request.get_json()
 
@@ -317,6 +317,69 @@ def create_termos():
     db.session.commit()
 
     return jsonify({'message': 'termo criado com sucesso!'}), 201
+
+
+@app.route('/termo_mais_recente', methods=['GET'])
+def termo_mais_recente():
+    ultimo_termo = termos.query.order_by(termos.data.desc()).first()
+
+    if ultimo_termo:
+        return jsonify({
+            'id': ultimo_termo.id,
+            'data': ultimo_termo.data.strftime('%Y-%m-%d'), 
+            'termo': ultimo_termo.termo
+        }), 200
+    else:
+        return jsonify({'message': 'Nenhum termo encontrado'}), 404
+
+
+
+@app.route('/verificar_aceitacao', methods=['GET'])
+@jwt_required() 
+def aceitou_ultimo_termo():
+    current_user = get_jwt_identity()
+    ultimo_termo = termos.query.order_by(termos.data.desc()).first()
+
+    if ultimo_termo:
+        aceitacao = aceitacao_usuario.query.filter_by(id_user=current_user, id_termo=ultimo_termo.id).first()
+        if aceitacao:
+            return jsonify({'message': 'Último termo já aceito'}), 201
+        
+        return  jsonify({'message': 'O último termo não foi aceito'}), 404
+
+
+
+@app.route('/aceitar_termo', methods=['POST'])
+def aceitar_termo():
+    dados = request.get_json()
+
+    id_user = dados.get('id_user')
+    id_termo = dados.get('id_termo')
+    aceitacao_padrao = dados.get('aceitacao_padrao')
+    aceitacao_email = dados.get('aceitacao_email')
+    data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
+
+    
+    if id_user is None or id_termo is None or aceitacao_padrao is None or aceitacao_email is None:
+        return jsonify({'message': 'Parâmetros inválidos'}), 400
+
+    aceitacao = aceitacao_usuario(id_user=id_user, id_termo=id_termo, aceitacao_padrao=aceitacao_padrao, aceitacao_email=aceitacao_email, data_aceitacao=data_aceitacao)
+    db.session.add(aceitacao)
+    db.session.commit()
+    return jsonify({'message': 'Aceitação do termo salva com sucesso'}), 201
+
+
+
+
+@app.route('/email/', methods=['POST'])
+def mail_sender():
+    data = request.get_json()
+
+    
+
+    return 'email enviado'
+    
+
 
 
 
