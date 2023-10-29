@@ -259,9 +259,9 @@ def login(email_in=None, senha_in=None):
         senha = data.get('senha')
 
     # email padrão -> admin@admin.com, senha padrão -> admin123
-    user = user.query.filter_by(email=email).first()
+    User = user.query.filter_by(email=email).first()
 
-    if user and bcrypt.checkpw(senha.encode('utf-8'), user.senha.encode('utf-8')):
+    if User and bcrypt.checkpw(senha.encode('utf-8'), User.senha.encode('utf-8')):
         # Credenciais válidas, crie um token JWT
         access_token = create_access_token(identity=email)
         return jsonify({'access_token': access_token}), 200
