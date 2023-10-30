@@ -407,19 +407,6 @@ def aceitar_termo():
 
 
 
-
-@app.route('/email/', methods=['POST'])
-def mail_sender():
-    data = request.get_json()
-
-    
-
-    return 'email enviado'
-    
-
-
-
-
 # # nova consulta
 @app.route('/consultaTeste/', methods=['POST'])
 @jwt_required()
