@@ -349,6 +349,26 @@ def aceitou_ultimo_termo():
 
 
 
+@app.route('/aceitar_termo', methods=['POST'])
+def aceitar_termo():
+    dados = request.get_json()
+
+    id_user = dados.get('id_user')
+    id_termo = dados.get('id_termo')
+    aceitacao_padrao = dados.get('aceitacao_padrao')
+    aceitacao_email = dados.get('aceitacao_email')
+    data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
+
+    
+    if id_user is None or id_termo is None or aceitacao_padrao is None or aceitacao_email is None:
+        return jsonify({'message': 'Parâmetros inválidos'}), 400
+
+    aceitacao = aceitacao_usuario(id_user=id_user, id_termo=id_termo, aceitacao_padrao=aceitacao_padrao, aceitacao_email=aceitacao_email, data_aceitacao=data_aceitacao)
+    db.session.add(aceitacao)
+    db.session.commit()
+    return jsonify({'message': 'Aceitação do termo salva com sucesso'}), 201
+
+
 @app.route('/enviar-emails', methods=['GET'])
 def enviar_emails():
     with db.engine.connect() as connection:
@@ -383,28 +403,6 @@ def enviar_emails():
             lista_de_emails.append(item['u.email'])
 
     return lista_de_emails
-
-
-
-@app.route('/aceitar_termo', methods=['POST'])
-def aceitar_termo():
-    dados = request.get_json()
-
-    id_user = dados.get('id_user')
-    id_termo = dados.get('id_termo')
-    aceitacao_padrao = dados.get('aceitacao_padrao')
-    aceitacao_email = dados.get('aceitacao_email')
-    data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
-
-    
-    if id_user is None or id_termo is None or aceitacao_padrao is None or aceitacao_email is None:
-        return jsonify({'message': 'Parâmetros inválidos'}), 400
-
-    aceitacao = aceitacao_usuario(id_user=id_user, id_termo=id_termo, aceitacao_padrao=aceitacao_padrao, aceitacao_email=aceitacao_email, data_aceitacao=data_aceitacao)
-    db.session.add(aceitacao)
-    db.session.commit()
-    return jsonify({'message': 'Aceitação do termo salva com sucesso'}), 201
-
 
 
 # # nova consulta
