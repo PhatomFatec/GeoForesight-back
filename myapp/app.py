@@ -3,6 +3,7 @@ from datetime import datetime
 import time
 import bcrypt
 from flask import Flask, jsonify, request
+from sqlalchemy import TEXT,DateTime
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from geoalchemy2 import Geography
@@ -10,6 +11,9 @@ import requests
 from sqlalchemy import create_engine, text
 import os
 from dotenv import load_dotenv
+import json
+import smtplib
+from email.message import EmailMessage
 
 
 from flask_jwt_extended import (
@@ -180,27 +184,27 @@ class aceitacao_usuario(db.Model):
     id_termo = db.Column(db.Integer, db.ForeignKey('termos.id')) 
     aceitacao_padrao = db.Column(db.Boolean, nullable=False)
     aceitacao_email = db.Column(db.Boolean, nullable=False)
-    data_aceitacao = db.Column(db.Date, nullable=False)
+    data_aceitacao = db.Column(db.DateTime,default=datetime.utcnow, nullable=False)
+
 
 class user(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
-    nome = db.Column(db.String(255), unique=True, nullable=False)
+    nome = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     senha = db.Column(db.String(255), nullable=False)
 
     rel_ace_user  = db.relationship('aceitacao_usuario', backref='user', lazy=True)
-
+    
 class termos(db.Model):
-    id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
-    data = db.Column(db.String(255), unique=True, nullable=False)
-    termo = db.Column(db.String(255), unique=True, nullable=False)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    data = db.Column(DateTime, default=datetime.utcnow, nullable=False) 
+    termo = db.Column(TEXT, unique=True, nullable=False)
 
     rel_ace_user = db.relationship('aceitacao_usuario', backref='termos', lazy=True)
 
 
 with app.app_context():
     db.create_all()
-
 
 
 
@@ -263,7 +267,7 @@ def login(email_in=None, senha_in=None):
 
     if User and bcrypt.checkpw(senha.encode('utf-8'), User.senha.encode('utf-8')):
         # Credenciais válidas, crie um token JWT
-        access_token = create_access_token(identity=email)
+        access_token = create_access_token(identity=User.id)
         return jsonify({'access_token': access_token}), 200
     else:
         return jsonify({'message': 'Credenciais inválidas.'}), 401
@@ -302,6 +306,134 @@ def login(email_in=None, senha_in=None):
 #############################
 ###### General Routes #######
 #############################
+
+
+@app.route('/create_termos', methods=['POST'])
+def create_termos():
+    dados = request.get_json()
+
+    data = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
+    termo = dados.get('termo')
+
+    new_termo = termos( data=data, termo=termo)
+    db.session.add(new_termo)
+    db.session.commit()
+
+    return jsonify({'message': 'termo criado com sucesso!'}), 201
+
+
+@app.route('/termo_mais_recente', methods=['GET'])
+def termo_mais_recente():
+    ultimo_termo = termos.query.order_by(termos.data.desc()).first()
+
+    if ultimo_termo:
+        return jsonify({
+            'id': ultimo_termo.id,
+            'data': ultimo_termo.data.strftime('%Y-%m-%d'), 
+            'termo': ultimo_termo.termo
+        }), 200
+    else:
+        return jsonify({'message': 'Nenhum termo encontrado'}), 404
+
+
+
+@app.route('/verificar_aceitacao', methods=['GET'])
+@jwt_required() 
+def aceitou_ultimo_termo():
+    current_user = get_jwt_identity()
+    ultimo_termo = termos.query.order_by(termos.data.desc()).first()
+
+    if ultimo_termo:
+        aceitacao = aceitacao_usuario.query.filter_by(id_user=current_user, id_termo=ultimo_termo.id).first()
+        if aceitacao:
+            return jsonify({'message': 'Último termo já aceito'}), 201
+        
+        return  jsonify({'message': 'O último termo não foi aceito'}), 404
+
+
+
+@app.route('/aceitar_termo', methods=['POST'])
+def aceitar_termo():
+    dados = request.get_json()
+
+    id_user = dados.get('id_user')
+    id_termo = dados.get('id_termo')
+    aceitacao_padrao = dados.get('aceitacao_padrao')
+    aceitacao_email = dados.get('aceitacao_email')
+    data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
+
+    
+    if id_user is None or id_termo is None or aceitacao_padrao is None or aceitacao_email is None:
+        return jsonify({'message': 'Parâmetros inválidos'}), 400
+
+    aceitacao = aceitacao_usuario(id_user=id_user, id_termo=id_termo, aceitacao_padrao=aceitacao_padrao, aceitacao_email=aceitacao_email, data_aceitacao=data_aceitacao)
+    db.session.add(aceitacao)
+    db.session.commit()
+    return jsonify({'message': 'Aceitação do termo salva com sucesso'}), 201
+
+@app.route('/enviar-emails', methods=['GET'])
+def enviar_emails():
+    with db.engine.connect() as connection:
+        query = text('''
+            SELECT id_user, aceitacao_email, data_aceitacao, u.email 
+            FROM aceitacao_usuario AS au
+            join public.user as u on u.id = au.id_user 
+            WHERE aceitacao_email = True
+            AND data_aceitacao = ( SELECT MAX(data_aceitacao)
+            FROM aceitacao_usuario
+            WHERE id_user = au.id_user);
+        ''')
+        aceitacoes = connection.execute(query)
+    
+        results = aceitacoes.fetchall()
+    
+    output = []
+    for row in results:
+        row_dict = {
+            "id_user": row[0],
+            "aceitacao_email": row[1],
+            "data_aceitacao": row[2],
+            "u.email": row[3]
+        }
+        output.append(row_dict)
+
+    #response_dict = jsonify(output)
+
+    lista_de_emails = []
+    for item in output:
+        if 'u.email' in item:
+            lista_de_emails.append(item['u.email'])
+
+    smtp_server = 'smtp.office365.com'
+    smtp_port = 587  # Porta SMTP (normalmente 587 para TLS)
+    smtp_username = 'geoforesight-api@outlook.com'   # Seu endereço de e-mail
+    smtp_password = 'Abc@2023'  # Sua senha de e-mail
+
+    with open('data/config.json', 'r') as config_file:
+        config_data = json.load(config_file)
+
+    assunto = config_data.get('assunto_email', 'GeoForesight Project')
+    corpo_da_mensagem = config_data.get('corpo_da_mensagem', 'Corpo do e-mail padrão.')
+
+    # Itera sobre a lista de e-mails e envia e-mails
+    for email in lista_de_emails:
+        msg = EmailMessage()
+        msg.set_content(corpo_da_mensagem)
+        msg['Subject'] = assunto
+        msg['From'] = smtp_username
+        msg['To'] = email
+
+        # Estabelece a conexão com o servidor SMTP e envia o e-mail
+        try:
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()  # Inicia uma conexão segura
+            server.login(smtp_username, smtp_password)
+            server.send_message(msg)
+            server.quit()
+            print(f'E-mail enviado para {email}')
+        except Exception as e:
+            print(f'Falha ao enviar e-mail para {email}: {str(e)}')
+    return jsonify({'message': 'emails enviados com sucesso'}), 201
 
 
 # # nova consulta
