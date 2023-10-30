@@ -349,6 +349,43 @@ def aceitou_ultimo_termo():
 
 
 
+@app.route('/enviar-emails', methods=['GET'])
+def enviar_emails():
+    with db.engine.connect() as connection:
+        query = text('''
+            SELECT id_user, aceitacao_email, data_aceitacao, u.email 
+            FROM aceitacao_usuario AS au
+            join public.user as u on u.id = au.id_user 
+            WHERE aceitacao_email = True
+            AND data_aceitacao = ( SELECT MAX(data_aceitacao)
+            FROM aceitacao_usuario
+            WHERE id_user = au.id_user);
+        ''')
+        aceitacoes = connection.execute(query)
+    
+        results = aceitacoes.fetchall()
+    
+    output = []
+    for row in results:
+        row_dict = {
+            "id_user": row[0],
+            "aceitacao_email": row[1],
+            "data_aceitacao": row[2],
+            "u.email": row[3]
+        }
+        output.append(row_dict)
+
+    #response_dict = jsonify(output)
+
+    lista_de_emails = []
+    for item in output:
+        if 'u.email' in item:
+            lista_de_emails.append(item['u.email'])
+
+    return lista_de_emails
+
+
+
 @app.route('/aceitar_termo', methods=['POST'])
 def aceitar_termo():
     dados = request.get_json()
