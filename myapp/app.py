@@ -11,6 +11,9 @@ import requests
 from sqlalchemy import create_engine, text
 import os
 from dotenv import load_dotenv
+import json
+import smtplib
+from email.message import EmailMessage
 
 
 from flask_jwt_extended import (
@@ -368,7 +371,6 @@ def aceitar_termo():
     db.session.commit()
     return jsonify({'message': 'Aceitação do termo salva com sucesso'}), 201
 
-
 @app.route('/enviar-emails', methods=['GET'])
 def enviar_emails():
     with db.engine.connect() as connection:
@@ -402,7 +404,36 @@ def enviar_emails():
         if 'u.email' in item:
             lista_de_emails.append(item['u.email'])
 
-    return lista_de_emails
+    smtp_server = 'smtp.office365.com'
+    smtp_port = 587  # Porta SMTP (normalmente 587 para TLS)
+    smtp_username = 'geoforesight-api@outlook.com'   # Seu endereço de e-mail
+    smtp_password = 'Abc@2023'  # Sua senha de e-mail
+
+    with open('data/config.json', 'r') as config_file:
+        config_data = json.load(config_file)
+
+    assunto = config_data.get('assunto_email', 'GeoForesight Project')
+    corpo_da_mensagem = config_data.get('corpo_da_mensagem', 'Corpo do e-mail padrão.')
+
+    # Itera sobre a lista de e-mails e envia e-mails
+    for email in lista_de_emails:
+        msg = EmailMessage()
+        msg.set_content(corpo_da_mensagem)
+        msg['Subject'] = assunto
+        msg['From'] = smtp_username
+        msg['To'] = email
+
+        # Estabelece a conexão com o servidor SMTP e envia o e-mail
+        try:
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()  # Inicia uma conexão segura
+            server.login(smtp_username, smtp_password)
+            server.send_message(msg)
+            server.quit()
+            print(f'E-mail enviado para {email}')
+        except Exception as e:
+            print(f'Falha ao enviar e-mail para {email}: {str(e)}')
+    return jsonify({'message': 'emails enviados com sucesso'}), 201
 
 
 # # nova consulta
