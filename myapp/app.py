@@ -624,6 +624,91 @@ def consulta_teste():
         # Tratamento de erro: retorna uma mensagem de erro genérica em caso de exceção
 
         return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
+    
+
+@app.route('/consultaNova', methods=['POST'])
+@jwt_required()
+def consulta_nova():
+    current_user = get_jwt_identity()
+    data = request.json
+
+    print(data)
+    try:
+
+        query = ''' SELECT * from 
+                vw_query_glebas_resultado
+                    WHERE 1=1'''
+
+        if data['ref_bacen'] is not None:
+            query += f" AND ref_bacen = {data['ref_bacen']}"
+        if data['nu_identificador'] is not None:
+            query += f" AND nu_identificador = {data['nu_identificador']}"
+        if data['inicio_plantio'] is not None:
+            query += f" AND inicio_plantio >= '{data['inicio_plantio']}'"
+        if data['descricao_solo'] is not None:
+            query += f" AND descricao_solo = '{data['descricao_solo']}'"
+        if data['descricao_evento'] is not None:
+            query += f" AND descricao_evento = '{data['descricao_evento']}'"
+        if data['descricao_cultiva'] is not None:
+            query += f" AND descricao_cultiva = '{data['descricao_cultiva']}'"
+        if data['final_plantio'] is not None:
+            query += f" AND final_plantio <= '{data['final_plantio']}'"
+        if data['inicio_colheita'] is not None:
+            query += f" AND inicio_colheita >= '{data['inicio_colheita']}'"
+        if data['final_colheita'] is not None:
+            query += f" AND final_colheita <= '{data['final_colheita']}'"
+        if data['descricao_grao'] is not None:
+            query += f" AND descricao_grao = '{data['descricao_grao']}'"
+        if data['descricao_producao'] is not None:
+            query += f" AND descricao_producao = '{data['descricao_producao']}'"
+        if data['municipio'] is not None:
+            query += f" AND municipio = '{data['municipio']}'"
+        if data['estado'] is not None:
+           query += f" AND estado = '{data['estado']}'"
+        if data['produto'] is not None:
+           query += f" AND produto = '{data['produto']}'"
+        if data['descricao_irrigacao'] is not None:
+            query += f" AND descricao_irrigacao = '{data['descricao_irrigacao']}'"
+        
+        engine = create_engine(os.getenv('url_heroku'))
+
+        conn = engine.connect()
+
+        # Executar a query
+        resultados = conn.execute(text(query)).fetchall()
+
+        # Montar a lista de resultados
+        lista_resultados = []
+        for resultado in resultados:
+            resultado_dict = {
+        "ref_bacen": resultado.ref_bacen,
+        "nu_identificador": resultado.nu_identificador,
+        "coordenadas": resultado.coordenadas,
+        "inicio_plantio": resultado.inicio_plantio,
+        "final_plantio": resultado.final_plantio,
+        "inicio_colheita": resultado.inicio_colheita,
+        "final_colheita": resultado.final_colheita,
+        "descricao_grao": resultado.descricao_grao,
+        "descricao_irrigacao": resultado.descricao_irrigacao,
+        "descricao_producao": resultado.descricao_producao,
+        "descricao_solo": resultado.descricao_solo, 
+        "descricao_evento": resultado.descricao_evento, 
+        "descricao_cultiva": resultado.descricao_cultiva,
+        "estado": resultado.estado,
+        "municipio": resultado.municipio,
+        "produto": resultado.produto
+    }
+            lista_resultados.append(resultado_dict)
+
+        #  Fechar a conexão
+        conn.close()
+
+        return jsonify(lista_resultados), 200
+
+    except Exception as e:
+        # Tratamento de erro: retorna uma mensagem de erro genérica em caso de exceção
+
+        return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
 
 
 # main
