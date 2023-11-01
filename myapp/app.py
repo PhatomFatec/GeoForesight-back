@@ -362,6 +362,7 @@ def aceitou_email():
             return jsonify({'message': 'Envio de email não permitido'}), 403
     else:
         return jsonify({'message': 'Nenhum registro de aceitação de email encontrado para o usuário'}), 404
+    
 
 
 @app.route('/verificar_aceitacao', methods=['GET'])
@@ -399,6 +400,7 @@ def aceitar_termo():
     db.session.add(aceitacao)
     db.session.commit()
     return jsonify({'message': 'Aceitação do termo salva com sucesso'}), 201
+
 
 @app.route('/enviar-emails', methods=['GET'])
 def enviar_emails():
