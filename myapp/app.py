@@ -363,38 +363,7 @@ def aceitou_email():
     else:
         return jsonify({'message': 'Nenhum registro de aceitação de email encontrado para o usuário'}), 404
     
-
-
-@app.route('/verificar_aceitacao', methods=['GET'])
-@jwt_required()
-def verificar_aceitacao():
-    current_user = get_jwt_identity()
-    ultimo_termo = termos.query.order_by(termos.data.desc()).first()
-
-    if ultimo_termo:
-        aceitacao = aceitacao_usuario.query.filter_by(id_user=current_user, id_termo=ultimo_termo.id).first()
-        if aceitacao:
-            return jsonify({'message': 'Último termo já aceito'}), 201
-        else:
-            return jsonify({'message': 'O último termo não foi aceito'}), 404
-    else:
-        return jsonify({'message': 'Nenhum termo encontrado'}), 404
       
-
-@app.route('/verificar_aceitacao_email', methods=['GET'])
-@jwt_required() 
-def aceitou_email():
-    current_user = get_jwt_identity()
-    ultimo_registro = aceitacao_usuario.query.filter_by(id_user=current_user).order_by(aceitacao_usuario.data_aceitacao.desc()).first()
-
-    if ultimo_registro:
-        aceitacao_email = ultimo_registro.aceitacao_email
-        if aceitacao_email:
-            return jsonify({'message': 'Envio de email permitido'}), 200
-        else:
-            return jsonify({'message': 'Envio de email não permitido'}), 403
-    else:
-        return jsonify({'message': 'Nenhum registro de aceitação de email encontrado para o usuário'}), 404
 
 
 @app.route('/verificar_aceitacao', methods=['GET'])
