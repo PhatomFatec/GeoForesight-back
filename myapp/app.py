@@ -176,6 +176,9 @@ db = SQLAlchemy(app)
 #      valor_parcela = db.Column(db.Double)
 #      cpf = db.Column(db.String(255))
 
+# puxar id do user pelo email fazendo uma query
+# mudar a função de aceite para 
+
 
 
 class aceitacao_usuario(db.Model):
@@ -212,6 +215,7 @@ with app.app_context():
 ######## cadastro  ##########
 #############################
 
+
 @app.route('/cadastro/', methods=['POST'])
 def cadastro():
     data = request.get_json()
@@ -219,6 +223,10 @@ def cadastro():
     nome = data.get('nome')
     email = data.get('email')
     senha = data.get('senha')
+
+    aceitacao_padrao = data.get('aceitacao_padrao')
+    aceitacao_email = data.get('aceitacao_email')
+    data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
     # Gerar um salt aleatório
     salt = bcrypt.gensalt()
@@ -235,15 +243,18 @@ def cadastro():
     try:
         db.session.add(novo_dado)
         db.session.commit()
-        # Atrasar o login por 30 segundos
-        time.sleep(3)
+        
+        id_user = user.query.filter_by(email=email).first()
+        ultimo_termo = termos.query.order_by(termos.data.desc()).first()
+
+        new = aceitacao_usuario(id_termo=ultimo_termo.id, id_user=id_user.id, aceitacao_padrao=aceitacao_padrao, aceitacao_email=aceitacao_email, data_aceitacao=data_aceitacao)
+        db.session.add(new)
+        db.session.commit()
 
         return jsonify({'mensagem': 'Dado salvo com sucesso!'}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'erro': 'Falha ao salvar os dados.'}), 500
-
-    
 
 
 #############################
