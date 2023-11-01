@@ -176,6 +176,9 @@ db = SQLAlchemy(app)
 #      valor_parcela = db.Column(db.Double)
 #      cpf = db.Column(db.String(255))
 
+# puxar id do user pelo email fazendo uma query
+# mudar a função de aceite para 
+
 
 
 class aceitacao_usuario(db.Model):
@@ -212,6 +215,7 @@ with app.app_context():
 ######## cadastro  ##########
 #############################
 
+
 @app.route('/cadastro', methods=['POST'])
 def cadastro():
     data = request.get_json()
@@ -219,6 +223,10 @@ def cadastro():
     nome = data.get('nome')
     email = data.get('email')
     senha = data.get('senha')
+
+    aceitacao_padrao = data.get('aceitacao_padrao')
+    aceitacao_email = data.get('aceitacao_email')
+    data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
     # Gerar um salt aleatório
     salt = bcrypt.gensalt()
@@ -235,15 +243,18 @@ def cadastro():
     try:
         db.session.add(novo_dado)
         db.session.commit()
-        # Atrasar o login por 30 segundos
-        time.sleep(3)
+        
+        id_user = user.query.filter_by(email=email).first()
+        ultimo_termo = termos.query.order_by(termos.data.desc()).first()
+
+        new = aceitacao_usuario(id_termo=ultimo_termo.id, id_user=id_user.id, aceitacao_padrao=aceitacao_padrao, aceitacao_email=aceitacao_email, data_aceitacao=data_aceitacao)
+        db.session.add(new)
+        db.session.commit()
 
         return jsonify({'mensagem': 'Dado salvo com sucesso!'}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'erro': 'Falha ao salvar os dados.'}), 500
-
-    
 
 
 #############################
@@ -337,19 +348,6 @@ def termo_mais_recente():
 
 
 
-@app.route('/verificar_aceitacao', methods=['GET'])
-@jwt_required() 
-def aceitou_ultimo_termo():
-    current_user = get_jwt_identity()
-    ultimo_termo = termos.query.order_by(termos.data.desc()).first()
-
-    if ultimo_termo:
-        aceitacao = aceitacao_usuario.query.filter_by(id_user=current_user, id_termo=ultimo_termo.id).first()
-        if aceitacao:
-            return jsonify({'message': 'Último termo já aceito'}), 201
-        
-        return  jsonify({'message': 'O último termo não foi aceito'}), 404
-
 @app.route('/verificar_aceitacao_email', methods=['GET'])
 @jwt_required() 
 def aceitou_email():
@@ -364,6 +362,8 @@ def aceitou_email():
             return jsonify({'message': 'Envio de email não permitido'}), 403
     else:
         return jsonify({'message': 'Nenhum registro de aceitação de email encontrado para o usuário'}), 404
+    
+      
 
 
 @app.route('/verificar_aceitacao', methods=['GET'])
@@ -400,6 +400,7 @@ def aceitar_termo():
     db.session.add(aceitacao)
     db.session.commit()
     return jsonify({'message': 'Aceitação do termo salva com sucesso'}), 201
+
 
 @app.route('/enviar-emails', methods=['GET'])
 def enviar_emails():
@@ -625,6 +626,7 @@ def consulta_teste():
         # Tratamento de erro: retorna uma mensagem de erro genérica em caso de exceção
 
         return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
+    
 
 @app.route('/consultaNova', methods=['POST'])
 @jwt_required()
@@ -709,6 +711,7 @@ def consulta_nova():
         # Tratamento de erro: retorna uma mensagem de erro genérica em caso de exceção
 
         return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
+      
 
 # main
 if __name__ == '__main__':
