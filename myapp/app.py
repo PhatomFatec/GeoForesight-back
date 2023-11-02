@@ -638,7 +638,7 @@ def consulta_nova():
     try:
 
         query = ''' SELECT * from 
-                vw_query_glebas_resultado
+                public.vw_predicoes
                     WHERE 1=1'''
 
         if data['ref_bacen'] is not None:
