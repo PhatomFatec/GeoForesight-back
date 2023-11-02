@@ -698,7 +698,8 @@ def consulta_nova():
         "descricao_cultiva": resultado.descricao_cultiva,
         "estado": resultado.estado,
         "municipio": resultado.municipio,
-        "produto": resultado.produto
+        "produto": resultado.produto,
+        "previsao": resultado.previsao
     }
             lista_resultados.append(resultado_dict)
 
