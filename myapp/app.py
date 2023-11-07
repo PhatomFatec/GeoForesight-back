@@ -279,7 +279,7 @@ def login(email_in=None, senha_in=None):
     if User and bcrypt.checkpw(senha.encode('utf-8'), User.senha.encode('utf-8')):
         # Credenciais válidas, crie um token JWT
         access_token = create_access_token(identity=User.id)
-        return jsonify({'access_token': access_token}), 200
+        return jsonify({'access_token': access_token, 'user_id': User.id}), 200
     else:
         return jsonify({'message': 'Credenciais inválidas.'}), 401
         # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
@@ -713,8 +713,7 @@ def consulta_nova():
         # Tratamento de erro: retorna uma mensagem de erro genérica em caso de exceção
 
         return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
-      
-
+    
 # main
 if __name__ == '__main__':
     app.run(debug=True)
