@@ -8,3 +8,4 @@ psycopg2
 Flask-JWT-Extended
 SQLAlchemy
 pymongo
+python-dotenv

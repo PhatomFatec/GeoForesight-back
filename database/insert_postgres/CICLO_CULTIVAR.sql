@@ -1,0 +1,15 @@
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (1, 'Grupo I');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (3, 'Grupo III');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (5, 'Tardio - Desabilitado a partir de dezembro de 2016');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (6, 'Desabilitado a partir de dezembro de 2016 - Intermediario');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (8, 'Superprecoce - Desabilitado a partir de dezembro de 2016');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (9, 'Semiprecoce - Desabilitado a partir de dezembro de 2016');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (11, 'Perene');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (12, 'Curto - Desabilitado a partir de dezembro de 2016');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (13, 'Muito curto - Desabilitado a partir de dezembro de 2016');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (14, 'Longo - Desabilitado a partir de dezembro de 2016');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (15, 'Semitardio - Desabilitado a partir de dezembro de 2016');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (16, 'Grupo V');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (99, 'Nao informado');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (4, 'Grupo IV');
+INSERT INTO public.ciclo_cultivar (idcultivar, descricao) VALUES (2, 'Grupo II');
