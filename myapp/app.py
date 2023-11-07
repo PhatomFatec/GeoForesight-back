@@ -642,7 +642,7 @@ def consulta_nova():
                     WHERE 1=1'''
 
         if data['ref_bacen'] is not None:
-            query += f" AND ref_bacen = {data['ref_bacen']}"
+            query += f" AND ref_bacen = '{data['ref_bacen']}'"
         if data['nu_identificador'] is not None:
             query += f" AND nu_identificador = {data['nu_identificador']}"
         if data['inicio_plantio'] is not None:
@@ -699,7 +699,8 @@ def consulta_nova():
         "estado": resultado.estado,
         "municipio": resultado.municipio,
         "produto": resultado.produto,
-        "previsao": resultado.previsao
+        "previsao": resultado.previsao,
+        "date": resultado.date
     }
             lista_resultados.append(resultado_dict)
 
