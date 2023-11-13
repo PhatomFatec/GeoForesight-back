@@ -279,7 +279,7 @@ def login(email_in=None, senha_in=None):
     if User and bcrypt.checkpw(senha.encode('utf-8'), User.senha.encode('utf-8')):
         # Credenciais válidas, crie um token JWT
         access_token = create_access_token(identity=User.id)
-        return jsonify({'access_token': access_token,'user_id': User.id}), 200
+        return jsonify({'access_token': access_token, 'user_id': User.id}), 200
     else:
         return jsonify({'message': 'Credenciais inválidas.'}), 401
         # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
@@ -637,9 +637,10 @@ def consulta_nova():
     print(data)
     try:
 
-        query = ''' SELECT * from 
+        query = ''' SELECT distinct * from 
                 public.vw_predicoes
-                    WHERE 1=1'''
+                    WHERE 1=1
+                '''
 
         if data['ref_bacen'] is not None:
             query += f" AND ref_bacen = '{data['ref_bacen']}'"
@@ -672,12 +673,14 @@ def consulta_nova():
         if data['descricao_irrigacao'] is not None:
             query += f" AND descricao_irrigacao = '{data['descricao_irrigacao']}'"
         
+        query2 = ' order by date ASC'
+        
         engine = create_engine(os.getenv('url_heroku'))
 
         conn = engine.connect()
 
         # Executar a query
-        resultados = conn.execute(text(query)).fetchall()
+        resultados = conn.execute(text(query+query2)).fetchall()
 
         # Montar a lista de resultados
         lista_resultados = []
@@ -713,8 +716,7 @@ def consulta_nova():
         # Tratamento de erro: retorna uma mensagem de erro genérica em caso de exceção
 
         return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
-      
-
+    
 # main
 if __name__ == '__main__':
     app.run(debug=True)
