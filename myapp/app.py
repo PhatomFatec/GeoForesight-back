@@ -177,7 +177,8 @@ db = SQLAlchemy(app)
 #      cpf = db.Column(db.String(255))
 
 # puxar id do user pelo email fazendo uma query
-# mudar a função de aceite para 
+# mudar a função de aceite para
+# 
 
 
 
@@ -185,8 +186,7 @@ class aceitacao_usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     id_user = db.Column(db.Integer, db.ForeignKey('user.id')) 
     id_termo = db.Column(db.Integer, db.ForeignKey('termos.id')) 
-    aceitacao_padrao = db.Column(db.Boolean, nullable=False)
-    aceitacao_email = db.Column(db.Boolean, nullable=False)
+    aceite = db.Column(db.Boolean, nullable=False)
     data_aceitacao = db.Column(db.DateTime,default=datetime.utcnow, nullable=False)
 
 
@@ -197,12 +197,20 @@ class user(db.Model):
     senha = db.Column(db.String(255), nullable=False)
 
     rel_ace_user  = db.relationship('aceitacao_usuario', backref='user', lazy=True)
+
+
+class tipo_termos(db.Model):
+    id_tipo = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tipo_desc = db.Column(db.String(255), nullable=False) 
+    termos_rel = db.relationship('termos', backref='tipo_termos', lazy=True)
     
 class termos(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    data = db.Column(DateTime, default=datetime.utcnow, nullable=False) 
+    data = db.Column(DateTime, default=datetime.utcnow, nullable=False)  
     termo = db.Column(TEXT, unique=True, nullable=False)
 
+    
+    id_tipo = db.Column(db.Integer, db.ForeignKey('tipo_termos.id_tipo'))
     rel_ace_user = db.relationship('aceitacao_usuario', backref='termos', lazy=True)
 
 
@@ -388,15 +396,14 @@ def aceitar_termo():
 
     id_user = dados.get('id_user')
     id_termo = dados.get('id_termo')
-    aceitacao_padrao = dados.get('aceitacao_padrao')
-    aceitacao_email = dados.get('aceitacao_email')
+    aceite = dados.get('aceite')
     data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
 
     
-    if id_user is None or id_termo is None or aceitacao_padrao is None or aceitacao_email is None:
+    if id_user is None or id_termo is None or aceite is None :
         return jsonify({'message': 'Parâmetros inválidos'}), 400
 
-    aceitacao = aceitacao_usuario(id_user=id_user, id_termo=id_termo, aceitacao_padrao=aceitacao_padrao, aceitacao_email=aceitacao_email, data_aceitacao=data_aceitacao)
+    aceitacao = aceitacao_usuario(id_user=id_user, id_termo=id_termo, aceite=aceite, data_aceitacao=data_aceitacao)
     db.session.add(aceitacao)
     db.session.commit()
     return jsonify({'message': 'Aceitação do termo salva com sucesso'}), 201
