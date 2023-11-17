@@ -436,16 +436,39 @@ def verificar_aceitacao():
 @jwt_required() 
 def aceitou_email():
     current_user = get_jwt_identity()
-    ultimo_registro = aceitacao_usuario.query.filter_by(id_user=current_user).order_by(aceitacao_usuario.data_aceitacao.desc()).first()
 
-    if ultimo_registro:
-        aceitacao_email = ultimo_registro.aceitacao_email
-        if aceitacao_email:
-            return jsonify({'message': 'Envio de email permitido'}), 200
-        else:
-            return jsonify({'message': 'Envio de email não permitido'}), 403
+    query = text("""SELECT id_user, au.id_termo ,tt.tipo_desc , data_aceitacao, au.aceite
+            FROM aceitacao_usuario AS au
+            join public.user as u on u.id = au.id_user 
+            join termos as t on t.id = au.id_termo 
+            join tipo_termos as tt on tt.id_tipo = t.id_tipo 
+            WHERE au.aceite = true
+            AND tt.tipo_desc like '%Email%'
+            AND au.data_aceitacao = (
+                SELECT
+                    MAX(data_aceitacao)
+                FROM
+                    aceitacao_usuario
+                WHERE
+                    id_user = au.id_user
+            );""")
+
+    result = db.session.execute(query, {'current_user': current_user})
+
+    termos_aceitos_email = []
+    for row in result:
+        termos_aceitos_email.append({
+            'id_user': row[0],
+            'id_termo': row[1],
+            'tipo_desc': row[2],
+            'data_aceitacao': row[3].isoformat(),
+            'aceite': row[4]
+        })
+
+        if termos_aceitos_email:
+            return jsonify({'message': 'Envio de email permitido'}), 200       
     else:
-        return jsonify({'message': 'Nenhum registro de aceitação de email encontrado para o usuário'}), 404
+        return jsonify({'message': 'Envio de email não permitido'}), 403
     
 
 @app.route('/enviar-emails', methods=['GET'])
