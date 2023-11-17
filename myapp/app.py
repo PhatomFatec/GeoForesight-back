@@ -469,35 +469,83 @@ def aceitou_email():
             return jsonify({'message': 'Envio de email permitido'}), 200       
     else:
         return jsonify({'message': 'Envio de email não permitido'}), 403
+
+@app.route('/verificar_aceitacao_whatsapp', methods=['GET'])
+@jwt_required() 
+def aceitou_envio_whatsapp():
+    current_user = get_jwt_identity()
+
+    query = text("""SELECT id_user, au.id_termo ,tt.tipo_desc , data_aceitacao, au.aceite
+            FROM aceitacao_usuario AS au
+            join public.user as u on u.id = au.id_user 
+            join termos as t on t.id = au.id_termo 
+            join tipo_termos as tt on tt.id_tipo = t.id_tipo 
+            WHERE au.aceite = true
+            AND tt.tipo_desc like '%WhatsApp%'
+            AND au.data_aceitacao = (
+                SELECT
+                    MAX(data_aceitacao)
+                FROM
+                    aceitacao_usuario
+                WHERE
+                    id_user = au.id_user
+            );""")
+
+    result = db.session.execute(query, {'current_user': current_user})
+
+    termos_aceitos_whatsapp = []
+    for row in result:
+        termos_aceitos_whatsapp.append({
+            'id_user': row[0],
+            'id_termo': row[1],
+            'tipo_desc': row[2],
+            'data_aceitacao': row[3].isoformat(),
+            'aceite': row[4]
+        })
+
+        if termos_aceitos_whatsapp:
+            return jsonify({'message': 'Envio de WhatsApp permitido'}), 200       
+    else:
+        return jsonify({'message': 'Envio de WhatsApp não permitido'}), 403
     
 
 @app.route('/enviar-emails', methods=['GET'])
 def enviar_emails():
     with db.engine.connect() as connection:
-        query = text('''
-            SELECT id_user, aceitacao_email, data_aceitacao, u.email 
-            FROM aceitacao_usuario AS au
-            join public.user as u on u.id = au.id_user 
-            WHERE aceitacao_email = True
-            AND data_aceitacao = ( SELECT MAX(data_aceitacao)
-            FROM aceitacao_usuario
-            WHERE id_user = au.id_user);
-        ''')
-        aceitacoes = connection.execute(query)
-    
-        results = aceitacoes.fetchall()
-    
-    output = []
-    for row in results:
-        row_dict = {
-            "id_user": row[0],
-            "aceitacao_email": row[1],
-            "data_aceitacao": row[2],
-            "u.email": row[3]
-        }
-        output.append(row_dict)
+            query = text('''
+                SELECT id_user, au.id_termo ,tt.tipo_desc , data_aceitacao, au.aceite, u.email 
+                FROM aceitacao_usuario AS au
+                join public.user as u on u.id = au.id_user 
+                join termos as t on t.id = au.id_termo 
+                join tipo_termos as tt on tt.id_tipo = t.id_tipo 
+                WHERE au.aceite = true
+                AND tt.tipo_desc like '%Email%'
+                AND au.data_aceitacao = (
+                    SELECT
+                        MAX(data_aceitacao)
+                    FROM
+                        aceitacao_usuario
+                    WHERE
+                        id_user = au.id_user
+                );
+            ''')
+            aceitacoes = connection.execute(query)
+        
+            results = aceitacoes.fetchall()
+        
+        # Verifica se a lista de resultados está vazia
+            if not results:
+                return jsonify({'message': 'Nenhum e-mail a ser enviado'}), 404
 
-    #response_dict = jsonify(output)
+            output = []
+            for row in results:
+                row_dict = {
+                    'id_user': row[0],
+                    'id_termo': row[1],
+                    'data_aceitacao': row[2],
+                    'aceite': row[3]
+                }
+                output.append(row_dict)
 
     lista_de_emails = []
     for item in output:
@@ -532,8 +580,9 @@ def enviar_emails():
             server.quit()
             print(f'E-mail enviado para {email}')
         except Exception as e:
-            print(f'Falha ao enviar e-mail para {email}: {str(e)}')
-    return jsonify({'message': 'emails enviados com sucesso'}), 201
+            print(f'Falha ao enviar e-mail para {email}: {str(e)}')
+    
+    return jsonify({'message': 'E-mails enviados com sucesso'}), 201
 
 
 # # nova consulta
