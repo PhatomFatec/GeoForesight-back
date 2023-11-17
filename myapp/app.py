@@ -222,7 +222,9 @@ with app.app_context():
 #############################
 ######## cadastro  ##########
 #############################
-
+from flask import jsonify, request
+from datetime import datetime
+from sqlalchemy import func
 
 @app.route('/cadastro', methods=['POST'])
 def cadastro():
@@ -231,11 +233,9 @@ def cadastro():
     nome = data.get('nome')
     email = data.get('email')
     senha = data.get('senha')
-
-    aceitacao_padrao = data.get('aceitacao_padrao')
-    aceitacao_email = data.get('aceitacao_email')
+    aceites = data.get('aceites', [])   
     data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
+
     # Gerar um salt aleatório
     salt = bcrypt.gensalt()
 
@@ -248,11 +248,39 @@ def cadastro():
 
     novo_dado = user(nome=nome, email=email, senha=hashed_password)
 
+    try:
+        db.session.add(novo_dado)
+        db.session.commit()
 
-    db.session.add(novo_dado)
-    db.session.commit()
-    return jsonify({'mensagem': 'Dado salvo com sucesso!'}), 201
+        # Obter o ID do usuário recém-criado
+        id_user = user.query.filter_by(email=email).first()
 
+        for aceite in aceites:
+            id_termo = aceite.get('id_termo')
+            valor_aceite = aceite.get('aceite')
+
+            # Verificar se o termo e o usuário são válidos
+            termo_valido = termos.query.filter_by(id=id_termo).first()
+            if not termo_valido:
+                return jsonify({'erro': 'Termo inválido'}), 400
+
+            # Verificar se o usuário já aceitou este termo
+            termo_aceito = aceitacao_usuario.query.filter_by(id_user=id_user.id, id_termo=id_termo).first()
+
+            if not termo_aceito:
+                # Adicionar o aceite para o termo específico
+                new_aceite = aceitacao_usuario(id_termo=id_termo, id_user=id_user.id, aceite=valor_aceite, data_aceitacao=data_aceitacao)
+                db.session.add(new_aceite)
+            else:
+                # Se o usuário já aceitou, atualizar o valor do aceite
+                termo_aceito.aceite = valor_aceite
+                termo_aceito.data_aceitacao = data_aceitacao
+
+        db.session.commit()
+        return jsonify({'mensagem': 'Dado salvo com sucesso!'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'erro': 'Falha ao salvar os dados.'}), 500
 
 
 #############################
