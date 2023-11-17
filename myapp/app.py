@@ -3,7 +3,7 @@ from datetime import datetime
 import time
 import bcrypt
 from flask import Flask, jsonify, request
-from sqlalchemy import TEXT,DateTime
+from sqlalchemy import TEXT,DateTime, func
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from geoalchemy2 import Geography
@@ -248,21 +248,11 @@ def cadastro():
 
     novo_dado = user(nome=nome, email=email, senha=hashed_password)
 
-    try:
-        db.session.add(novo_dado)
-        db.session.commit()
-        
-        id_user = user.query.filter_by(email=email).first()
-        ultimo_termo = termos.query.order_by(termos.data.desc()).first()
 
-        new = aceitacao_usuario(id_termo=ultimo_termo.id, id_user=id_user.id, aceitacao_padrao=aceitacao_padrao, aceitacao_email=aceitacao_email, data_aceitacao=data_aceitacao)
-        db.session.add(new)
-        db.session.commit()
+    db.session.add(novo_dado)
+    db.session.commit()
+    return jsonify({'mensagem': 'Dado salvo com sucesso!'}), 201
 
-        return jsonify({'mensagem': 'Dado salvo com sucesso!'}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'erro': 'Falha ao salvar os dados.'}), 500
 
 
 #############################
@@ -327,33 +317,119 @@ def login(email_in=None, senha_in=None):
 #############################
 
 
+@app.route('/create_tipo_termos', methods=['POST'])
+def create_tipo_termos():
+    dados = request.get_json()
+    tipo_desc = dados.get('tipo_desc')
+    new_tipo_termo = tipo_termos( tipo_desc=tipo_desc)
+    db.session.add(new_tipo_termo)
+    db.session.commit()
+
+    return jsonify({'message': 'tipo termo criado com sucesso!'}), 201
+
+
 @app.route('/create_termos', methods=['POST'])
 def create_termos():
     dados = request.get_json()
-
+    id_tipo = dados.get('id_tipo')
     data = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
     termo = dados.get('termo')
 
-    new_termo = termos( data=data, termo=termo)
+    new_termo = termos(data=data, termo=termo, id_tipo=id_tipo)
     db.session.add(new_termo)
     db.session.commit()
 
     return jsonify({'message': 'termo criado com sucesso!'}), 201
 
+@app.route('/aceitar_termo', methods=['POST'])
+def aceitar_termo():
+    dados = request.get_json()
+
+    id_user = dados.get('id_user')
+    aceites = dados.get('aceites')  # aceites é uma lista de dicionários contendo id_termo e aceite
+
+    data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
+    
+    if id_user is None or aceites is None:
+        return jsonify({'message': 'Parâmetros inválidos'}), 400
+
+    try:
+        for aceite in aceites:
+            id_termo = aceite.get('id_termo')
+            aceitacao = aceitacao_usuario(id_user=id_user, id_termo=id_termo, aceite=aceite['aceite'], data_aceitacao=data_aceitacao)
+            db.session.add(aceitacao)
+        
+        db.session.commit()
+        return jsonify({'message': 'Aceitação dos termos salva com sucesso'}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Termo ou usuário não encontrado'}), 404
+
+
 
 @app.route('/termo_mais_recente', methods=['GET'])
 def termo_mais_recente():
-    ultimo_termo = termos.query.order_by(termos.data.desc()).first()
+    subquery = db.session.query(
+        termos.id_tipo,
+        func.max(termos.data).label('max_data')
+    ).group_by(termos.id_tipo).subquery()
 
-    if ultimo_termo:
-        return jsonify({
-            'id': ultimo_termo.id,
-            'data': ultimo_termo.data.strftime('%Y-%m-%d'), 
-            'termo': ultimo_termo.termo
-        }), 200
+    query = db.session.query(termos).join(
+        subquery,
+        (termos.id_tipo == subquery.c.id_tipo) &
+        (termos.data == subquery.c.max_data)
+    )
+
+    resultados = query.all()
+
+    if resultados:
+        termos_mais_recentes = []
+        for resultado in resultados:
+            termos_mais_recentes.append({
+                'id': resultado.id,
+                'data': resultado.data.strftime('%Y-%m-%d'),
+                'id_tipo': resultado.id_tipo,
+                'termo': resultado.termo
+            })
+
+        return jsonify(termos_mais_recentes), 200
     else:
         return jsonify({'message': 'Nenhum termo encontrado'}), 404
+    
 
+@app.route('/verificar_aceitacao', methods=['GET'])
+@jwt_required()
+def verificar_aceitacao():
+    current_user = get_jwt_identity()
+
+    query = text("""
+        SELECT id_user, au.id_termo , data_aceitacao, au.aceite
+            FROM aceitacao_usuario AS au
+            join public.user as u on u.id = au.id_user 
+            WHERE au.aceite = True
+            AND au.data_aceitacao = ( SELECT MAX(data_aceitacao)
+            FROM aceitacao_usuario
+            WHERE id_user = au.id_user);
+    """)
+
+    result = db.session.execute(query, {'current_user': current_user})
+
+    
+    termos_aceitos = []
+    for row in result:
+        termos_aceitos.append({
+            'id_user': row[0],
+            'id_termo': row[1],
+            'data_aceitacao': row[2].isoformat(),
+            'aceite': row[3]
+        })
+    print(termos_aceitos)
+
+    if termos_aceitos:
+        return jsonify({'termos_aceitos': termos_aceitos})
+    else:
+        return jsonify({'message': 'Nenhum termo aceito encontrado'}), 404
 
 
 @app.route('/verificar_aceitacao_email', methods=['GET'])
@@ -371,43 +447,6 @@ def aceitou_email():
     else:
         return jsonify({'message': 'Nenhum registro de aceitação de email encontrado para o usuário'}), 404
     
-      
-
-
-@app.route('/verificar_aceitacao', methods=['GET'])
-@jwt_required()
-def verificar_aceitacao():
-    current_user = get_jwt_identity()
-    ultimo_termo = termos.query.order_by(termos.data.desc()).first()
-
-    if ultimo_termo:
-        aceitacao = aceitacao_usuario.query.filter_by(id_user=current_user, id_termo=ultimo_termo.id).first()
-        if aceitacao:
-            return jsonify({'message': 'Último termo já aceito'}), 201
-        else:
-            return jsonify({'message': 'O último termo não foi aceito'}), 404
-    else:
-        return jsonify({'message': 'Nenhum termo encontrado'}), 404
-
-
-@app.route('/aceitar_termo', methods=['POST'])
-def aceitar_termo():
-    dados = request.get_json()
-
-    id_user = dados.get('id_user')
-    id_termo = dados.get('id_termo')
-    aceite = dados.get('aceite')
-    data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
-
-    
-    if id_user is None or id_termo is None or aceite is None :
-        return jsonify({'message': 'Parâmetros inválidos'}), 400
-
-    aceitacao = aceitacao_usuario(id_user=id_user, id_termo=id_termo, aceite=aceite, data_aceitacao=data_aceitacao)
-    db.session.add(aceitacao)
-    db.session.commit()
-    return jsonify({'message': 'Aceitação do termo salva com sucesso'}), 201
-
 
 @app.route('/enviar-emails', methods=['GET'])
 def enviar_emails():
