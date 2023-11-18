@@ -305,7 +305,7 @@ def login(email_in=None, senha_in=None):
     if User and bcrypt.checkpw(senha.encode('utf-8'), User.senha.encode('utf-8')):
         # Credenciais válidas, crie um token JWT
         access_token = create_access_token(identity=User.id)
-        return jsonify({'access_token': access_token, 'user_id': User.id}), 200
+        return jsonify({'access_token': access_token, 'user_id': User.id, 'nome': User.nome}), 200
     else:
         return jsonify({'message': 'Credenciais inválidas.'}), 401
         # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
@@ -465,78 +465,59 @@ def verificar_aceitacao():
 def aceitou_email():
     current_user = get_jwt_identity()
 
-    query = text("""SELECT id_user, au.id_termo ,tt.tipo_desc , data_aceitacao, au.aceite
-            FROM aceitacao_usuario AS au
-            join public.user as u on u.id = au.id_user 
-            join termos as t on t.id = au.id_termo 
-            join tipo_termos as tt on tt.id_tipo = t.id_tipo 
-            WHERE au.aceite = true
-            AND tt.tipo_desc like '%Email%'
-            AND au.data_aceitacao = (
-                SELECT
-                    MAX(data_aceitacao)
-                FROM
-                    aceitacao_usuario
-                WHERE
-                    id_user = au.id_user
-            );""")
+    query = text("""  SELECT id_user, au.id_termo, tt.tipo_desc, data_aceitacao, au.aceite
+        FROM aceitacao_usuario AS au
+        JOIN public.user AS u ON u.id = au.id_user
+        JOIN termos AS t ON t.id = au.id_termo
+        JOIN tipo_termos AS tt ON tt.id_tipo = t.id_tipo
+        WHERE au.id_user = :current_user
+        AND au.aceite = true
+        AND tt.tipo_desc LIKE '%Email%'
+        AND au.data_aceitacao = (
+            SELECT MAX(data_aceitacao)
+            FROM aceitacao_usuario
+            WHERE id_user = au.id_user
+        );""")
 
     result = db.session.execute(query, {'current_user': current_user})
+    termos_aceitos_email = list(result.fetchall())
 
-    termos_aceitos_email = []
-    for row in result:
-        termos_aceitos_email.append({
-            'id_user': row[0],
-            'id_termo': row[1],
-            'tipo_desc': row[2],
-            'data_aceitacao': row[3].isoformat(),
-            'aceite': row[4]
-        })
-
-        if termos_aceitos_email:
-            return jsonify({'message': 'Envio de email permitido'}), 200       
-    else:
-        return jsonify({'message': 'Envio de email não permitido'}), 403
-
-@app.route('/verificar_aceitacao_whatsapp', methods=['GET'])
-@jwt_required() 
-def aceitou_envio_whatsapp():
-    current_user = get_jwt_identity()
-
-    query = text("""SELECT id_user, au.id_termo ,tt.tipo_desc , data_aceitacao, au.aceite
-            FROM aceitacao_usuario AS au
-            join public.user as u on u.id = au.id_user 
-            join termos as t on t.id = au.id_termo 
-            join tipo_termos as tt on tt.id_tipo = t.id_tipo 
-            WHERE au.aceite = true
-            AND tt.tipo_desc like '%WhatsApp%'
-            AND au.data_aceitacao = (
-                SELECT
-                    MAX(data_aceitacao)
-                FROM
-                    aceitacao_usuario
-                WHERE
-                    id_user = au.id_user
-            );""")
-
-    result = db.session.execute(query, {'current_user': current_user})
-
-    termos_aceitos_whatsapp = []
-    for row in result:
-        termos_aceitos_whatsapp.append({
-            'id_user': row[0],
-            'id_termo': row[1],
-            'tipo_desc': row[2],
-            'data_aceitacao': row[3].isoformat(),
-            'aceite': row[4]
-        })
-
-        if termos_aceitos_whatsapp:
-            return jsonify({'message': 'Envio de WhatsApp permitido'}), 200       
+    if termos_aceitos_email:
+        return jsonify({'message': 'Envio de WhatsApp permitido'}), 200
     else:
         return jsonify({'message': 'Envio de WhatsApp não permitido'}), 403
     
 
+
+@app.route('/verificar_aceitacao_whatsapp', methods=['GET'])
+@jwt_required()
+def aceitou_envio_whatsapp():
+    current_user = get_jwt_identity()
+
+    query = text("""
+        SELECT id_user, au.id_termo, tt.tipo_desc, data_aceitacao, au.aceite
+        FROM aceitacao_usuario AS au
+        JOIN public.user AS u ON u.id = au.id_user
+        JOIN termos AS t ON t.id = au.id_termo
+        JOIN tipo_termos AS tt ON tt.id_tipo = t.id_tipo
+        WHERE au.id_user = :current_user
+        AND au.aceite = true
+        AND tt.tipo_desc LIKE '%WhatsApp%'
+        AND au.data_aceitacao = (
+            SELECT MAX(data_aceitacao)
+            FROM aceitacao_usuario
+            WHERE id_user = au.id_user
+        );
+    """)
+
+    result = db.session.execute(query, {'current_user': current_user})
+    termos_aceitos_wpp = list(result.fetchall())
+
+    if termos_aceitos_wpp:
+        return jsonify({'message': 'Envio de WhatsApp permitido'}), 200
+    else:
+        return jsonify({'message': 'Envio de WhatsApp não permitido'}), 403
+    
 @app.route('/enviar-emails', methods=['GET'])
 def enviar_emails():
     with db.engine.connect() as connection:
