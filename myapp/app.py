@@ -318,6 +318,49 @@ def login(email_in=None, senha_in=None):
 ###### General Routes #######
 #############################
 
+@app.route('/users', methods=['GET'])
+@jwt_required()
+def get_user():
+        try:
+            current_user = get_jwt_identity()
+            current_user = user.query.filter_by(id=current_user).first()
+
+            if current_user:
+                resposta = {
+                    'id': current_user.id,
+                    'nome': current_user.nome,
+                    'email': current_user.email,
+                }
+                return jsonify(resposta), 200
+            else:
+                return jsonify({'mensagem': 'Usuário não encontrado'}), 404
+
+        except Exception as e:
+            return jsonify({'mensagem': 'Erro interno'}), 500
+
+
+@app.route('/user', methods=['PUT'])
+@jwt_required
+def update_user_info():
+    current_user = get_jwt_identity()
+    user = user.query.get(current_user)
+
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    data = request.get_json()
+    nome = data.get('nome')
+    email = data.get('email')
+
+    if nome:
+        user.nome = nome
+    if email:
+        user.email = email
+
+    db.session.commit()
+
+    return jsonify({'mensagem': 'Informações atualizadas com sucesso!'}), 200
+
 
 @app.route('/create_termos', methods=['POST'])
 def create_termos():
