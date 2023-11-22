@@ -195,6 +195,7 @@ class user(db.Model):
     nome = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     senha = db.Column(db.String(255), nullable=False)
+    telefone = db.Column(db.String(14))
 
     rel_ace_user  = db.relationship('aceitacao_usuario', backref='user', lazy=True)
 
@@ -233,6 +234,7 @@ def cadastro():
     nome = data.get('nome')
     email = data.get('email')
     senha = data.get('senha')
+    telefone = data.get('telefone')
     aceites = data.get('aceites', [])   
     data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -246,7 +248,7 @@ def cadastro():
     # Imprimir o valor de hash
     print(hashed_password)
 
-    novo_dado = user(nome=nome, email=email, senha=hashed_password)
+    novo_dado = user(nome=nome, email=email, telefone=telefone, senha=hashed_password)
 
     try:
         db.session.add(novo_dado)
@@ -431,14 +433,14 @@ def termo_mais_recente():
 def verificar_aceitacao():
     current_user = get_jwt_identity()
 
-    query = text("""
+    query = text(f"""
         SELECT id_user, au.id_termo , data_aceitacao, au.aceite
             FROM aceitacao_usuario AS au
             join public.user as u on u.id = au.id_user 
             WHERE au.aceite = True
             AND au.data_aceitacao = ( SELECT MAX(data_aceitacao)
             FROM aceitacao_usuario
-            WHERE id_user = au.id_user);
+            WHERE id_user =:current_user);
     """)
 
     result = db.session.execute(query, {'current_user': current_user})
@@ -483,9 +485,9 @@ def aceitou_email():
     termos_aceitos_email = list(result.fetchall())
 
     if termos_aceitos_email:
-        return jsonify({'message': 'Envio de WhatsApp permitido'}), 200
+        return jsonify({'message': 'Envio de email permitido'}), 200
     else:
-        return jsonify({'message': 'Envio de WhatsApp não permitido'}), 403
+        return jsonify({'message': 'Envio de email não permitido'}), 403
     
 
 
@@ -495,7 +497,7 @@ def aceitou_envio_whatsapp():
     current_user = get_jwt_identity()
 
     query = text("""
-        SELECT id_user, au.id_termo, tt.tipo_desc, data_aceitacao, au.aceite
+        SELECT id_user, au.id_termo, tt.tipo_desc, data_aceitacao, au.aceite, u.telefone
         FROM aceitacao_usuario AS au
         JOIN public.user AS u ON u.id = au.id_user
         JOIN termos AS t ON t.id = au.id_termo
@@ -591,7 +593,60 @@ def enviar_emails():
         except Exception as e:
             print(f'Falha ao enviar e-mail para {email}: {str(e)}')
     
-    return jsonify({'message': 'E-mails enviados com sucesso'}), 201
+    return jsonify({'message': 'E-mail enviados com sucesso'}), 201
+
+@app.route('/enviar-whatsapp', methods=['GET'])
+def enviar_whatsapp():
+    with db.engine.connect() as connection:
+            query = text('''
+                SELECT id_user, au.id_termo ,tt.tipo_desc , data_aceitacao, au.aceite, u.telefone 
+                FROM aceitacao_usuario AS au
+                join public.user as u on u.id = au.id_user 
+                join termos as t on t.id = au.id_termo 
+                join tipo_termos as tt on tt.id_tipo = t.id_tipo 
+                WHERE au.aceite = true
+                AND tt.tipo_desc like '%Whats%'
+                AND au.data_aceitacao = (
+                    SELECT
+                        MAX(data_aceitacao)
+                    FROM
+                        aceitacao_usuario
+                    WHERE
+                        id_user = au.id_user
+                );
+            ''')
+            aceitacoes = connection.execute(query)
+        
+            results = aceitacoes.fetchall()
+        
+        # Verifica se a lista de resultados está vazia
+            if not results:
+                return jsonify({'message': 'Nenhuma mensagem a ser enviado'}), 404
+
+            output = []
+            for row in results:
+                row_dict = {
+                    'id_user': row[0],
+                    'id_termo': row[1],
+                    'data_aceitacao': row[2],
+                    'aceite': row[3]
+                }
+                output.append(row_dict)
+
+    lista_de_whatsapp = []
+    for item in output:
+        if 'u.telefone' in item:
+            lista_de_whatsapp.append(item['u.telefone'])
+    for tel in lista_de_whatsapp:
+        try:
+            print(f'Mensagem enviada para {tel}')
+        except Exception as e:
+            print(f'Falha ao enviar mensagem para {tel}: {str(e)}')
+    
+    return jsonify({'message': 'Mensagens enviadas com sucesso'}), 201
+
+
+
 
 
 # # nova consulta
