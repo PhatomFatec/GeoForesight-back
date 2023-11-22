@@ -3,7 +3,7 @@ from datetime import datetime
 import time
 import bcrypt
 from flask import Flask, jsonify, request
-from sqlalchemy import TEXT,DateTime
+from sqlalchemy import TEXT,DateTime, func
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from geoalchemy2 import Geography
@@ -63,121 +63,114 @@ db = SQLAlchemy(app)
 #############################
 
 
-# class Table(db.Model):
-#     tablename = 'table'
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(255), nullable=False)
-
-# class clima(db.Model):
-#     idClima = db.Column(db.Integer, primary_key=True, nullable=False)
-#     descricao = db.Column(db.String(255))
-#     operacao_credito_estadual = db.relationship(
-#         'operacao_credito_estadual', backref='clima')
+class clima(db.Model):
+    idClima = db.Column(db.Integer, primary_key=True, nullable=False)
+    descricao = db.Column(db.String(255))
+    operacao_credito_estadual = db.relationship(
+        'operacao_credito_estadual', backref='clima')
 
 
-# class irrigacao(db.Model):
-#     idirrigacao = db.Column(db.Integer, primary_key=True,
-#                             nullable=False,  autoincrement=False)
-#     descricao = db.Column(db.String(255))
-#     operacao_credito_estadual = db.relationship(
-#         'operacao_credito_estadual', backref='irrigacao')
+class irrigacao(db.Model):
+    idirrigacao = db.Column(db.Integer, primary_key=True,
+                            nullable=False,  autoincrement=False)
+    descricao = db.Column(db.String(255))
+    operacao_credito_estadual = db.relationship(
+        'operacao_credito_estadual', backref='irrigacao')
 
-# class solo(db.Model):
-#     idSolo = db.Column(db.Integer, primary_key=True, nullable=False)
-#     descricao = db.Column(db.String(255))
-#     operacao_credito_estadual = db.relationship(
-#         'operacao_credito_estadual', backref='solo')
-
-
-# class ciclo_producao(db.Model):
-#     idciclo = db.Column(db.Integer, primary_key=True,
-#                         nullable=False,  autoincrement=False)
-#     descricao = db.Column(db.String(255))
-#     operacao_credito_estadual = db.relationship(
-#         'operacao_credito_estadual', backref='ciclo_producao')
+class solo(db.Model):
+    idSolo = db.Column(db.Integer, primary_key=True, nullable=False)
+    descricao = db.Column(db.String(255))
+    operacao_credito_estadual = db.relationship(
+        'operacao_credito_estadual', backref='solo')
 
 
-# class grao(db.Model):
-#     idgrao = db.Column(db.Integer, primary_key=True,
-#                        nullable=False,  autoincrement=False)
-#     descricao = db.Column(db.String(255))
-#     operacao_credito_estadual = db.relationship(
-#         'operacao_credito_estadual', backref='grao')
+class ciclo_producao(db.Model):
+    idciclo = db.Column(db.Integer, primary_key=True,
+                        nullable=False,  autoincrement=False)
+    descricao = db.Column(db.String(255))
+    operacao_credito_estadual = db.relationship(
+        'operacao_credito_estadual', backref='ciclo_producao')
 
 
-# class evento_climatico(db.Model):
-#     idEvento = db.Column(db.Integer, primary_key=True, nullable=False)
-#     descricao = db.Column(db.String(255))
-#     operacao_credito_estadual = db.relationship(
-#         'operacao_credito_estadual', backref='evento_climatico')
+class grao(db.Model):
+    idgrao = db.Column(db.Integer, primary_key=True,
+                       nullable=False,  autoincrement=False)
+    descricao = db.Column(db.String(255))
+    operacao_credito_estadual = db.relationship(
+        'operacao_credito_estadual', backref='grao')
 
 
-# class produtos(db.Model):
-#     idproduto = db.Column(db.Integer, primary_key=True,
-#                           nullable=False,  autoincrement=False)
-#     nome = db.Column(db.String(255))
-#     Empreendimento = db.Relationship('empreendimento', backref='produtos')
+class evento_climatico(db.Model):
+    idEvento = db.Column(db.Integer, primary_key=True, nullable=False)
+    descricao = db.Column(db.String(255))
+    operacao_credito_estadual = db.relationship(
+        'operacao_credito_estadual', backref='evento_climatico')
 
 
-# class operacao_credito_estadual(db.Model):
-#     ref_bacen = db.Column(db.Integer, primary_key=True,
-#                           unique=True, nullable=False,  autoincrement=False)
-#     nu_ordem = db.Column(db.Integer, primary_key=True,
-#                          unique=True, nullable=False,  autoincrement=False)
-#     inicio_plantio = db.Column(db.Date, nullable=False)
-#     final_plantio = db.Column(db.Date, nullable=False)
-#     final_colheita = db.Column(db.Date, nullable=False)
-#     inicio_colheita = db.Column(db.Date, nullable=False)
-#     data_liberacao = db.Column(db.Date, nullable=False)
-#     data_vencimento = db.Column(db.Date, nullable=False)
-#     idciclo = db.Column(db.Integer, db.ForeignKey('ciclo_producao.idciclo'))
-#     idteste = db.Column(
-#         db.Integer, db.ForeignKey('empreendimento.idteste'))
-#     idClima = db.Column(db.Integer, db.ForeignKey('clima.idClima'))
-#     idEvento = db.Column(db.Integer, db.ForeignKey('evento_climatico.idEvento'))
-#     idgrao = db.Column(db.Integer, db.ForeignKey('grao.idgrao'))
-#     idSolo = db.Column(db.Integer, db.ForeignKey('solo.idSolo'))
-#     idirrigacao = db.Column(db.Integer, db.ForeignKey('irrigacao.idirrigacao'))
-#     idempreendimento = db.Column(
-#         db.Integer, db.ForeignKey('empreendimento.idempreendimento'))
-#     glebas = db.relationship('glebas', backref='operacao_credito_estadual')
-
-#     table_args = (
-#         db.PrimaryKeyConstraint('ref_bacen', 'nu_ordem'),
-#     )
+class produtos(db.Model):
+    idproduto = db.Column(db.Integer, primary_key=True,
+                          nullable=False,  autoincrement=False)
+    nome = db.Column(db.String(255))
+    Empreendimento = db.Relationship('empreendimento', backref='produtos')
 
 
-# class glebas(db.Model):
-#     idgleba = db.Column(db.Integer, primary_key=True,
-#                         nullable=False,  autoincrement=False)
-#     coordenadas = db.Column(
-#         Geography(geometry_type='POINT', srid=4326), nullable=False)
-#     altitude = db.Column(db.Double)
-#     nu_ponto = db.Column(db.Integer, nullable=False)
-#     ref_bacen = db.Column(db.Integer, db.ForeignKey(
-#         'operacao_credito_estadual.ref_bacen'))
-#     nu_ordem = db.Column(db.Integer, db.ForeignKey(
-#         'operacao_credito_estadual.nu_ordem'))
+class operacao_credito_estadual(db.Model):
+    ref_bacen = db.Column(db.Integer, primary_key=True,
+                          unique=True, nullable=False,  autoincrement=False)
+    nu_ordem = db.Column(db.Integer, primary_key=True,
+                         unique=True, nullable=False,  autoincrement=False)
+    inicio_plantio = db.Column(db.Date, nullable=False)
+    final_plantio = db.Column(db.Date, nullable=False)
+    final_colheita = db.Column(db.Date, nullable=False)
+    inicio_colheita = db.Column(db.Date, nullable=False)
+    data_liberacao = db.Column(db.Date, nullable=False)
+    data_vencimento = db.Column(db.Date, nullable=False)
+    idciclo = db.Column(db.Integer, db.ForeignKey('ciclo_producao.idciclo'))
+    idteste = db.Column(
+        db.Integer, db.ForeignKey('empreendimento.idteste'))
+    idClima = db.Column(db.Integer, db.ForeignKey('clima.idClima'))
+    idEvento = db.Column(db.Integer, db.ForeignKey('evento_climatico.idEvento'))
+    idgrao = db.Column(db.Integer, db.ForeignKey('grao.idgrao'))
+    idSolo = db.Column(db.Integer, db.ForeignKey('solo.idSolo'))
+    idirrigacao = db.Column(db.Integer, db.ForeignKey('irrigacao.idirrigacao'))
+    idempreendimento = db.Column(
+        db.Integer, db.ForeignKey('empreendimento.idempreendimento'))
+    glebas = db.relationship('glebas', backref='operacao_credito_estadual')
+
+    table_args = (
+        db.PrimaryKeyConstraint('ref_bacen', 'nu_ordem'),
+    )
 
 
-# class empreendimento(db.Model):
-#     idteste = db.Column(db.Integer, primary_key=True, nullable=False)
-#     idempreendimento = db.Column(db.BigInteger, nullable=False)
-#     finalidade = db.Column(db.String(255))
-#     cesta = db.Column(db.String(255), nullable=False)
-#     modalidade = db.Column(db.String(255), nullable=False)
-#     idproduto = db.Column(db.Integer, db.ForeignKey(
-#         'produtos.idproduto'), nullable=False)
+class glebas(db.Model):
+    idgleba = db.Column(db.Integer, primary_key=True,
+                        nullable=False,  autoincrement=False)
+    coordenadas = db.Column(
+        Geography(geometry_type='POINT', srid=4326), nullable=False)
+    altitude = db.Column(db.Double)
+    nu_ponto = db.Column(db.Integer, nullable=False)
+    ref_bacen = db.Column(db.Integer, db.ForeignKey(
+        'operacao_credito_estadual.ref_bacen'))
+    nu_ordem = db.Column(db.Integer, db.ForeignKey(
+        'operacao_credito_estadual.nu_ordem'))
+
+
+class empreendimento(db.Model):
+    idteste = db.Column(db.Integer, primary_key=True, nullable=False)
+    idempreendimento = db.Column(db.BigInteger, nullable=False)
+    finalidade = db.Column(db.String(255))
+    cesta = db.Column(db.String(255), nullable=False)
+    modalidade = db.Column(db.String(255), nullable=False)
+    idproduto = db.Column(db.Integer, db.ForeignKey(
+        'produtos.idproduto'), nullable=False)
     
 
-# class cooperados(db.Model):
-#      ref_bacen = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
-#      nu_ordem = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
-#      valor_parcela = db.Column(db.Double)
-#      cpf = db.Column(db.String(255))
+class cooperados(db.Model):
+     ref_bacen = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
+     nu_ordem = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
+     valor_parcela = db.Column(db.Double)
+     cpf = db.Column(db.String(255))
 
-# puxar id do user pelo email fazendo uma query
-# mudar a função de aceite para 
 
 
 
@@ -185,8 +178,7 @@ class aceitacao_usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     id_user = db.Column(db.Integer, db.ForeignKey('user.id')) 
     id_termo = db.Column(db.Integer, db.ForeignKey('termos.id')) 
-    aceitacao_padrao = db.Column(db.Boolean, nullable=False)
-    aceitacao_email = db.Column(db.Boolean, nullable=False)
+    aceite = db.Column(db.Boolean, nullable=False)
     data_aceitacao = db.Column(db.DateTime,default=datetime.utcnow, nullable=False)
 
 
@@ -195,14 +187,23 @@ class user(db.Model):
     nome = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     senha = db.Column(db.String(255), nullable=False)
+    telefone = db.Column(db.String(14))
 
     rel_ace_user  = db.relationship('aceitacao_usuario', backref='user', lazy=True)
+
+
+class tipo_termos(db.Model):
+    id_tipo = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tipo_desc = db.Column(db.String(255), nullable=False) 
+    termos_rel = db.relationship('termos', backref='tipo_termos', lazy=True)
     
 class termos(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    data = db.Column(DateTime, default=datetime.utcnow, nullable=False) 
+    data = db.Column(DateTime, default=datetime.utcnow, nullable=False)  
     termo = db.Column(TEXT, unique=True, nullable=False)
 
+    
+    id_tipo = db.Column(db.Integer, db.ForeignKey('tipo_termos.id_tipo'))
     rel_ace_user = db.relationship('aceitacao_usuario', backref='termos', lazy=True)
 
 
@@ -214,7 +215,9 @@ with app.app_context():
 #############################
 ######## cadastro  ##########
 #############################
-
+from flask import jsonify, request
+from datetime import datetime
+from sqlalchemy import func
 
 @app.route('/cadastro', methods=['POST'])
 def cadastro():
@@ -223,11 +226,10 @@ def cadastro():
     nome = data.get('nome')
     email = data.get('email')
     senha = data.get('senha')
-
-    aceitacao_padrao = data.get('aceitacao_padrao')
-    aceitacao_email = data.get('aceitacao_email')
+    telefone = data.get('telefone')
+    aceites = data.get('aceites', [])   
     data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
+
     # Gerar um salt aleatório
     salt = bcrypt.gensalt()
 
@@ -238,19 +240,37 @@ def cadastro():
     # Imprimir o valor de hash
     print(hashed_password)
 
-    novo_dado = user(nome=nome, email=email, senha=hashed_password)
+    novo_dado = user(nome=nome, email=email, telefone=telefone, senha=hashed_password)
 
     try:
         db.session.add(novo_dado)
         db.session.commit()
-        
+
+        # Obter o ID do usuário recém-criado
         id_user = user.query.filter_by(email=email).first()
-        ultimo_termo = termos.query.order_by(termos.data.desc()).first()
 
-        new = aceitacao_usuario(id_termo=ultimo_termo.id, id_user=id_user.id, aceitacao_padrao=aceitacao_padrao, aceitacao_email=aceitacao_email, data_aceitacao=data_aceitacao)
-        db.session.add(new)
+        for aceite in aceites:
+            id_termo = aceite.get('id_termo')
+            valor_aceite = aceite.get('aceite')
+
+            # Verificar se o termo e o usuário são válidos
+            termo_valido = termos.query.filter_by(id=id_termo).first()
+            if not termo_valido:
+                return jsonify({'erro': 'Termo inválido'}), 400
+
+            # Verificar se o usuário já aceitou este termo
+            termo_aceito = aceitacao_usuario.query.filter_by(id_user=id_user.id, id_termo=id_termo).first()
+
+            if not termo_aceito:
+                # Adicionar o aceite para o termo específico
+                new_aceite = aceitacao_usuario(id_termo=id_termo, id_user=id_user.id, aceite=valor_aceite, data_aceitacao=data_aceitacao)
+                db.session.add(new_aceite)
+            else:
+                # Se o usuário já aceitou, atualizar o valor do aceite
+                termo_aceito.aceite = valor_aceite
+                termo_aceito.data_aceitacao = data_aceitacao
+
         db.session.commit()
-
         return jsonify({'mensagem': 'Dado salvo com sucesso!'}), 201
     except Exception as e:
         db.session.rollback()
@@ -279,7 +299,7 @@ def login(email_in=None, senha_in=None):
     if User and bcrypt.checkpw(senha.encode('utf-8'), User.senha.encode('utf-8')):
         # Credenciais válidas, crie um token JWT
         access_token = create_access_token(identity=User.id)
-        return jsonify({'access_token': access_token, 'user_id': User.id}), 200
+        return jsonify({'access_token': access_token, 'user_id': User.id, 'nome': User.nome}), 200
     else:
         return jsonify({'message': 'Credenciais inválidas.'}), 401
         # Se as credenciais não forem válidas (email incorreto, senha incorreta ou ambos),
@@ -319,116 +339,216 @@ def login(email_in=None, senha_in=None):
 #############################
 
 
+@app.route('/create_tipo_termos', methods=['POST'])
+def create_tipo_termos():
+    dados = request.get_json()
+    tipo_desc = dados.get('tipo_desc')
+    new_tipo_termo = tipo_termos( tipo_desc=tipo_desc)
+    db.session.add(new_tipo_termo)
+    db.session.commit()
+
+    return jsonify({'message': 'tipo termo criado com sucesso!'}), 201
+
+
 @app.route('/create_termos', methods=['POST'])
 def create_termos():
     dados = request.get_json()
-
+    id_tipo = dados.get('id_tipo')
     data = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
     termo = dados.get('termo')
 
-    new_termo = termos( data=data, termo=termo)
+    new_termo = termos(data=data, termo=termo, id_tipo=id_tipo)
     db.session.add(new_termo)
     db.session.commit()
 
     return jsonify({'message': 'termo criado com sucesso!'}), 201
-
-
-@app.route('/termo_mais_recente', methods=['GET'])
-def termo_mais_recente():
-    ultimo_termo = termos.query.order_by(termos.data.desc()).first()
-
-    if ultimo_termo:
-        return jsonify({
-            'id': ultimo_termo.id,
-            'data': ultimo_termo.data.strftime('%Y-%m-%d'), 
-            'termo': ultimo_termo.termo
-        }), 200
-    else:
-        return jsonify({'message': 'Nenhum termo encontrado'}), 404
-
-
-
-@app.route('/verificar_aceitacao_email', methods=['GET'])
-@jwt_required() 
-def aceitou_email():
-    current_user = get_jwt_identity()
-    ultimo_registro = aceitacao_usuario.query.filter_by(id_user=current_user).order_by(aceitacao_usuario.data_aceitacao.desc()).first()
-
-    if ultimo_registro:
-        aceitacao_email = ultimo_registro.aceitacao_email
-        if aceitacao_email:
-            return jsonify({'message': 'Envio de email permitido'}), 200
-        else:
-            return jsonify({'message': 'Envio de email não permitido'}), 403
-    else:
-        return jsonify({'message': 'Nenhum registro de aceitação de email encontrado para o usuário'}), 404
-    
-      
-
-
-@app.route('/verificar_aceitacao', methods=['GET'])
-@jwt_required()
-def verificar_aceitacao():
-    current_user = get_jwt_identity()
-    ultimo_termo = termos.query.order_by(termos.data.desc()).first()
-
-    if ultimo_termo:
-        aceitacao = aceitacao_usuario.query.filter_by(id_user=current_user, id_termo=ultimo_termo.id).first()
-        if aceitacao:
-            return jsonify({'message': 'Último termo já aceito'}), 201
-        else:
-            return jsonify({'message': 'O último termo não foi aceito'}), 404
-    else:
-        return jsonify({'message': 'Nenhum termo encontrado'}), 404
-
 
 @app.route('/aceitar_termo', methods=['POST'])
 def aceitar_termo():
     dados = request.get_json()
 
     id_user = dados.get('id_user')
-    id_termo = dados.get('id_termo')
-    aceitacao_padrao = dados.get('aceitacao_padrao')
-    aceitacao_email = dados.get('aceitacao_email')
-    data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
+    aceites = dados.get('aceites')  # aceites é uma lista de dicionários contendo id_termo e aceite
 
+    data_aceitacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
     
-    if id_user is None or id_termo is None or aceitacao_padrao is None or aceitacao_email is None:
+    if id_user is None or aceites is None:
         return jsonify({'message': 'Parâmetros inválidos'}), 400
 
-    aceitacao = aceitacao_usuario(id_user=id_user, id_termo=id_termo, aceitacao_padrao=aceitacao_padrao, aceitacao_email=aceitacao_email, data_aceitacao=data_aceitacao)
-    db.session.add(aceitacao)
-    db.session.commit()
-    return jsonify({'message': 'Aceitação do termo salva com sucesso'}), 201
+    try:
+        for aceite in aceites:
+            id_termo = aceite.get('id_termo')
+            aceitacao = aceitacao_usuario(id_user=id_user, id_termo=id_termo, aceite=aceite['aceite'], data_aceitacao=data_aceitacao)
+            db.session.add(aceitacao)
+        
+        db.session.commit()
+        return jsonify({'message': 'Aceitação dos termos salva com sucesso'}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Termo ou usuário não encontrado'}), 404
 
 
+
+@app.route('/termo_mais_recente', methods=['GET'])
+def termo_mais_recente():
+    subquery = db.session.query(
+        termos.id_tipo,
+        func.max(termos.data).label('max_data')
+    ).group_by(termos.id_tipo).subquery()
+
+    query = db.session.query(termos).join(
+        subquery,
+        (termos.id_tipo == subquery.c.id_tipo) &
+        (termos.data == subquery.c.max_data)
+    )
+
+    resultados = query.all()
+
+    if resultados:
+        termos_mais_recentes = []
+        for resultado in resultados:
+            termos_mais_recentes.append({
+                'id': resultado.id,
+                'data': resultado.data.strftime('%Y-%m-%d'),
+                'id_tipo': resultado.id_tipo,
+                'termo': resultado.termo
+            })
+
+        return jsonify(termos_mais_recentes), 200
+    else:
+        return jsonify({'message': 'Nenhum termo encontrado'}), 404
+    
+
+@app.route('/verificar_aceitacao', methods=['GET'])
+@jwt_required()
+def verificar_aceitacao():
+    current_user = get_jwt_identity()
+
+    query = text(f"""
+        SELECT id_user, au.id_termo , data_aceitacao, au.aceite
+            FROM aceitacao_usuario AS au
+            join public.user as u on u.id = au.id_user 
+            WHERE au.aceite = True
+            AND au.data_aceitacao = ( SELECT MAX(data_aceitacao)
+            FROM aceitacao_usuario
+            WHERE id_user =:current_user);
+    """)
+
+    result = db.session.execute(query, {'current_user': current_user})
+
+    
+    termos_aceitos = []
+    for row in result:
+        termos_aceitos.append({
+            'id_user': row[0],
+            'id_termo': row[1],
+            'data_aceitacao': row[2].isoformat(),
+            'aceite': row[3]
+        })
+    print(termos_aceitos)
+
+    if termos_aceitos:
+        return jsonify({'termos_aceitos': termos_aceitos})
+    else:
+        return jsonify({'message': 'Nenhum termo aceito encontrado'}), 404
+
+
+@app.route('/verificar_aceitacao_email', methods=['GET'])
+@jwt_required() 
+def aceitou_email():
+    current_user = get_jwt_identity()
+
+    query = text("""  SELECT id_user, au.id_termo, tt.tipo_desc, data_aceitacao, au.aceite
+        FROM aceitacao_usuario AS au
+        JOIN public.user AS u ON u.id = au.id_user
+        JOIN termos AS t ON t.id = au.id_termo
+        JOIN tipo_termos AS tt ON tt.id_tipo = t.id_tipo
+        WHERE au.id_user = :current_user
+        AND au.aceite = true
+        AND tt.tipo_desc LIKE '%Email%'
+        AND au.data_aceitacao = (
+            SELECT MAX(data_aceitacao)
+            FROM aceitacao_usuario
+            WHERE id_user = au.id_user
+        );""")
+
+    result = db.session.execute(query, {'current_user': current_user})
+    termos_aceitos_email = list(result.fetchall())
+
+    if termos_aceitos_email:
+        return jsonify({'message': 'Envio de email permitido'}), 200
+    else:
+        return jsonify({'message': 'Envio de email não permitido'}), 403
+    
+
+
+@app.route('/verificar_aceitacao_whatsapp', methods=['GET'])
+@jwt_required()
+def aceitou_envio_whatsapp():
+    current_user = get_jwt_identity()
+
+    query = text("""
+        SELECT id_user, au.id_termo, tt.tipo_desc, data_aceitacao, au.aceite, u.telefone
+        FROM aceitacao_usuario AS au
+        JOIN public.user AS u ON u.id = au.id_user
+        JOIN termos AS t ON t.id = au.id_termo
+        JOIN tipo_termos AS tt ON tt.id_tipo = t.id_tipo
+        WHERE au.id_user = :current_user
+        AND au.aceite = true
+        AND tt.tipo_desc LIKE '%WhatsApp%'
+        AND au.data_aceitacao = (
+            SELECT MAX(data_aceitacao)
+            FROM aceitacao_usuario
+            WHERE id_user = au.id_user
+        );
+    """)
+
+    result = db.session.execute(query, {'current_user': current_user})
+    termos_aceitos_wpp = list(result.fetchall())
+
+    if termos_aceitos_wpp:
+        return jsonify({'message': 'Envio de WhatsApp permitido'}), 200
+    else:
+        return jsonify({'message': 'Envio de WhatsApp não permitido'}), 403
+    
 @app.route('/enviar-emails', methods=['GET'])
 def enviar_emails():
     with db.engine.connect() as connection:
-        query = text('''
-            SELECT id_user, aceitacao_email, data_aceitacao, u.email 
-            FROM aceitacao_usuario AS au
-            join public.user as u on u.id = au.id_user 
-            WHERE aceitacao_email = True
-            AND data_aceitacao = ( SELECT MAX(data_aceitacao)
-            FROM aceitacao_usuario
-            WHERE id_user = au.id_user);
-        ''')
-        aceitacoes = connection.execute(query)
-    
-        results = aceitacoes.fetchall()
-    
-    output = []
-    for row in results:
-        row_dict = {
-            "id_user": row[0],
-            "aceitacao_email": row[1],
-            "data_aceitacao": row[2],
-            "u.email": row[3]
-        }
-        output.append(row_dict)
+            query = text('''
+                SELECT id_user, au.id_termo ,tt.tipo_desc , data_aceitacao, au.aceite, u.email 
+                FROM aceitacao_usuario AS au
+                join public.user as u on u.id = au.id_user 
+                join termos as t on t.id = au.id_termo 
+                join tipo_termos as tt on tt.id_tipo = t.id_tipo 
+                WHERE au.aceite = true
+                AND tt.tipo_desc like '%Email%'
+                AND au.data_aceitacao = (
+                    SELECT
+                        MAX(data_aceitacao)
+                    FROM
+                        aceitacao_usuario
+                    WHERE
+                        id_user = au.id_user
+                );
+            ''')
+            aceitacoes = connection.execute(query)
+        
+            results = aceitacoes.fetchall()
+        
+        # Verifica se a lista de resultados está vazia
+            if not results:
+                return jsonify({'message': 'Nenhum e-mail a ser enviado'}), 404
 
-    #response_dict = jsonify(output)
+            output = []
+            for row in results:
+                row_dict = {
+                    'id_user': row[0],
+                    'id_termo': row[1],
+                    'data_aceitacao': row[2],
+                    'aceite': row[3]
+                }
+                output.append(row_dict)
 
     lista_de_emails = []
     for item in output:
@@ -463,8 +583,62 @@ def enviar_emails():
             server.quit()
             print(f'E-mail enviado para {email}')
         except Exception as e:
-            print(f'Falha ao enviar e-mail para {email}: {str(e)}')
-    return jsonify({'message': 'emails enviados com sucesso'}), 201
+            print(f'Falha ao enviar e-mail para {email}: {str(e)}')
+    
+    return jsonify({'message': 'E-mail enviados com sucesso'}), 201
+
+@app.route('/enviar-whatsapp', methods=['GET'])
+def enviar_whatsapp():
+    with db.engine.connect() as connection:
+            query = text('''
+                SELECT id_user, au.id_termo ,tt.tipo_desc , data_aceitacao, au.aceite, u.telefone 
+                FROM aceitacao_usuario AS au
+                join public.user as u on u.id = au.id_user 
+                join termos as t on t.id = au.id_termo 
+                join tipo_termos as tt on tt.id_tipo = t.id_tipo 
+                WHERE au.aceite = true
+                AND tt.tipo_desc like '%Whats%'
+                AND au.data_aceitacao = (
+                    SELECT
+                        MAX(data_aceitacao)
+                    FROM
+                        aceitacao_usuario
+                    WHERE
+                        id_user = au.id_user
+                );
+            ''')
+            aceitacoes = connection.execute(query)
+        
+            results = aceitacoes.fetchall()
+        
+        # Verifica se a lista de resultados está vazia
+            if not results:
+                return jsonify({'message': 'Nenhuma mensagem a ser enviado'}), 404
+
+            output = []
+            for row in results:
+                row_dict = {
+                    'id_user': row[0],
+                    'id_termo': row[1],
+                    'data_aceitacao': row[2],
+                    'aceite': row[3]
+                }
+                output.append(row_dict)
+
+    lista_de_whatsapp = []
+    for item in output:
+        if 'u.telefone' in item:
+            lista_de_whatsapp.append(item['u.telefone'])
+    for tel in lista_de_whatsapp:
+        try:
+            print(f'Mensagem enviada para {tel}')
+        except Exception as e:
+            print(f'Falha ao enviar mensagem para {tel}: {str(e)}')
+    
+    return jsonify({'message': 'Mensagens enviadas com sucesso'}), 201
+
+
+
 
 
 # # nova consulta
