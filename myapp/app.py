@@ -1,178 +1,14 @@
-
-from datetime import datetime
-import time
-import bcrypt
-from flask import Flask, jsonify, request
-from sqlalchemy import TEXT,DateTime, func
-from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS
 from geoalchemy2 import Geography
-import requests
-from sqlalchemy import create_engine, text
-import os
 from dotenv import load_dotenv
+from datetime import datetime
+import requests
+import bcrypt
 import json
-import smtplib
-from email.message import EmailMessage
+import os
 
-
-from flask_jwt_extended import (
-    JWTManager, create_access_token, jwt_required, get_jwt_identity
-)
-
-load_dotenv()
-
-
-# from pymongo.mongo_client import MongoClient
-# from pymongo.server_api import ServerApi
-
-app = Flask(__name__)
-
-app.config['JWT_SECRET_KEY'] = 'your-secret-key'
-
-jwt = JWTManager(app)
-
-CORS(app)
-
-# Configurações do banco de dados PostgreSQL
-
-
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('url_heroku')
-
-db = SQLAlchemy(app)
-
-# Defina o modelo para a tabela "table"
-
-#############################
-##### Define Functions ######
-#############################
-
-
-# def mongo_connection():
-#     uri = "mongodb+srv://phantom:<password>@cluster0.yxkoek8.mongodb.net/?retryWrites=true&w=majority"
-#     client = MongoClient(uri)
-
-#     # Nome da coleção
-#     collection = client.GeoForesight.User
-
-#     return collection
-
-
-#############################
-##### Database Classes ######
-#############################
-
-
-class clima(db.Model):
-    idClima = db.Column(db.Integer, primary_key=True, nullable=False)
-    descricao = db.Column(db.String(255))
-    operacao_credito_estadual = db.relationship(
-        'operacao_credito_estadual', backref='clima')
-
-
-class irrigacao(db.Model):
-    idirrigacao = db.Column(db.Integer, primary_key=True,
-                            nullable=False,  autoincrement=False)
-    descricao = db.Column(db.String(255))
-    operacao_credito_estadual = db.relationship(
-        'operacao_credito_estadual', backref='irrigacao')
-
-class solo(db.Model):
-    idSolo = db.Column(db.Integer, primary_key=True, nullable=False)
-    descricao = db.Column(db.String(255))
-    operacao_credito_estadual = db.relationship(
-        'operacao_credito_estadual', backref='solo')
-
-
-class ciclo_producao(db.Model):
-    idciclo = db.Column(db.Integer, primary_key=True,
-                        nullable=False,  autoincrement=False)
-    descricao = db.Column(db.String(255))
-    operacao_credito_estadual = db.relationship(
-        'operacao_credito_estadual', backref='ciclo_producao')
-
-
-class grao(db.Model):
-    idgrao = db.Column(db.Integer, primary_key=True,
-                       nullable=False,  autoincrement=False)
-    descricao = db.Column(db.String(255))
-    operacao_credito_estadual = db.relationship(
-        'operacao_credito_estadual', backref='grao')
-
-
-class evento_climatico(db.Model):
-    idEvento = db.Column(db.Integer, primary_key=True, nullable=False)
-    descricao = db.Column(db.String(255))
-    operacao_credito_estadual = db.relationship(
-        'operacao_credito_estadual', backref='evento_climatico')
-
-
-class produtos(db.Model):
-    idproduto = db.Column(db.Integer, primary_key=True,
-                          nullable=False,  autoincrement=False)
-    nome = db.Column(db.String(255))
-    Empreendimento = db.Relationship('empreendimento', backref='produtos')
-
-
-class operacao_credito_estadual(db.Model):
-    ref_bacen = db.Column(db.Integer, primary_key=True,
-                          unique=True, nullable=False,  autoincrement=False)
-    nu_ordem = db.Column(db.Integer, primary_key=True,
-                         unique=True, nullable=False,  autoincrement=False)
-    inicio_plantio = db.Column(db.Date, nullable=False)
-    final_plantio = db.Column(db.Date, nullable=False)
-    final_colheita = db.Column(db.Date, nullable=False)
-    inicio_colheita = db.Column(db.Date, nullable=False)
-    data_liberacao = db.Column(db.Date, nullable=False)
-    data_vencimento = db.Column(db.Date, nullable=False)
-    idciclo = db.Column(db.Integer, db.ForeignKey('ciclo_producao.idciclo'))
-    idteste = db.Column(
-        db.Integer, db.ForeignKey('empreendimento.idteste'))
-    idClima = db.Column(db.Integer, db.ForeignKey('clima.idClima'))
-    idEvento = db.Column(db.Integer, db.ForeignKey('evento_climatico.idEvento'))
-    idgrao = db.Column(db.Integer, db.ForeignKey('grao.idgrao'))
-    idSolo = db.Column(db.Integer, db.ForeignKey('solo.idSolo'))
-    idirrigacao = db.Column(db.Integer, db.ForeignKey('irrigacao.idirrigacao'))
-    idempreendimento = db.Column(
-        db.Integer, db.ForeignKey('empreendimento.idempreendimento'))
-    glebas = db.relationship('glebas', backref='operacao_credito_estadual')
-
-    table_args = (
-        db.PrimaryKeyConstraint('ref_bacen', 'nu_ordem'),
-    )
-
-
-class glebas(db.Model):
-    idgleba = db.Column(db.Integer, primary_key=True,
-                        nullable=False,  autoincrement=False)
-    coordenadas = db.Column(
-        Geography(geometry_type='POINT', srid=4326), nullable=False)
-    altitude = db.Column(db.Double)
-    nu_ponto = db.Column(db.Integer, nullable=False)
-    ref_bacen = db.Column(db.Integer, db.ForeignKey(
-        'operacao_credito_estadual.ref_bacen'))
-    nu_ordem = db.Column(db.Integer, db.ForeignKey(
-        'operacao_credito_estadual.nu_ordem'))
-
-
-class empreendimento(db.Model):
-    idteste = db.Column(db.Integer, primary_key=True, nullable=False)
-    idempreendimento = db.Column(db.BigInteger, nullable=False)
-    finalidade = db.Column(db.String(255))
-    cesta = db.Column(db.String(255), nullable=False)
-    modalidade = db.Column(db.String(255), nullable=False)
-    idproduto = db.Column(db.Integer, db.ForeignKey(
-        'produtos.idproduto'), nullable=False)
-    
-
-class cooperados(db.Model):
-     ref_bacen = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
-     nu_ordem = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
-     valor_parcela = db.Column(db.Double)
-     cpf = db.Column(db.String(255))
-
-
-
+from sqlalchemy import TEXT,DateTime, func
+from sqlalchemy import create_engine, text
+from flask import Flask, jsonify, request
 
 class aceitacao_usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -180,7 +16,6 @@ class aceitacao_usuario(db.Model):
     id_termo = db.Column(db.Integer, db.ForeignKey('termos.id')) 
     aceite = db.Column(db.Boolean, nullable=False)
     data_aceitacao = db.Column(db.DateTime,default=datetime.utcnow, nullable=False)
-
 
 class user(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
@@ -191,7 +26,6 @@ class user(db.Model):
 
     rel_ace_user  = db.relationship('aceitacao_usuario', backref='user', lazy=True)
 
-
 class tipo_termos(db.Model):
     id_tipo = db.Column(db.Integer, primary_key=True, autoincrement=True)
     tipo_desc = db.Column(db.String(255), nullable=False) 
@@ -201,7 +35,6 @@ class termos(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     data = db.Column(DateTime, default=datetime.utcnow, nullable=False)  
     termo = db.Column(TEXT, unique=True, nullable=False)
-
     
     id_tipo = db.Column(db.Integer, db.ForeignKey('tipo_termos.id_tipo'))
     rel_ace_user = db.relationship('aceitacao_usuario', backref='termos', lazy=True)
@@ -215,9 +48,6 @@ with app.app_context():
 #############################
 ######## cadastro  ##########
 #############################
-from flask import jsonify, request
-from datetime import datetime
-from sqlalchemy import func
 
 @app.route('/cadastro', methods=['POST'])
 def cadastro():
@@ -337,6 +167,63 @@ def login(email_in=None, senha_in=None):
 #############################
 ###### General Routes #######
 #############################
+
+@app.route('/infousers', methods=['GET'])
+@jwt_required()
+def get_user():
+        try:
+            current_user = get_jwt_identity()
+            current_user = user.query.filter_by(id=current_user).first()
+
+            if current_user:
+                resposta = {
+                    'nome': current_user.nome,
+                    'email': current_user.email,
+                    'telefone': current_user.telefone,
+                }
+                return jsonify(resposta), 200
+            else:
+                return jsonify({'mensagem': 'Usuário não encontrado'}), 404
+
+        except Exception as e:
+            return jsonify({'mensagem': 'Erro interno'}), 500
+
+
+@app.route('/attuser', methods=['PUT'])
+@jwt_required()
+def update_user_info():
+    current_user = get_jwt_identity()
+    current_user = user.query.filter_by(id=current_user).first()
+
+    if not current_user:
+        return jsonify({'error': 'User not found'}), 404
+
+    data = request.get_json()
+    nome = data.get('nome')
+    email = data.get('email')
+    telefone = data.get('telefone')
+
+    if nome:
+        current_user.nome = nome
+    if email:
+        current_user.email = email
+    if telefone:
+        current_user.telefone = telefone
+
+    db.session.commit()
+
+    return jsonify({'mensagem': 'Informações atualizadas com sucesso!'}), 200
+
+
+@app.route('/create_tipo_termos', methods=['POST'])
+def create_tipo_termos():
+    dados = request.get_json()
+    tipo_desc = dados.get('tipo_desc')
+    new_tipo_termo = tipo_termos( tipo_desc=tipo_desc)
+    db.session.add(new_tipo_termo)
+    db.session.commit()
+
+    return jsonify({'message': 'tipo termo criado com sucesso!'}), 201
 
 
 @app.route('/create_tipo_termos', methods=['POST'])
