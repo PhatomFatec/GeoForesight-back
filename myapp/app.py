@@ -1,3 +1,4 @@
+from bson import _name_value_to_bson
 from geoalchemy2 import Geography
 from dotenv import load_dotenv
 from datetime import datetime
@@ -9,7 +10,101 @@ import os
 from sqlalchemy import TEXT,DateTime, func
 from sqlalchemy import create_engine, text
 from flask import Flask, jsonify, request
+from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
+from bson import ObjectId
+import random
+import string
 
+from email.message import EmailMessage
+import smtplib
+
+from flask_jwt_extended import (
+    JWTManager, create_access_token, jwt_required, get_jwt_identity
+)
+
+load_dotenv()
+
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+
+app = Flask(__name__)
+
+app.config['JWT_SECRET_KEY'] = 'your-secret-key'
+
+jwt = JWTManager(app)
+
+CORS(app)
+
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+
+# Configurações do banco de dados PostgreSQL
+app.config['SQLALCHEMY_DATABASE_URI'] = 'string de conexão'
+
+db = SQLAlchemy(app)
+
+
+#############################
+##### Database Classes ######
+#############################
+
+
+# class operacao_credito_estadual(db.Model):
+#     ref_bacen = db.Column(db.Integer, primary_key=True,
+#                           unique=True, nullable=False,  autoincrement=False)
+#     nu_ordem = db.Column(db.Integer, primary_key=True,
+#                          unique=True, nullable=False,  autoincrement=False)
+#     inicio_plantio = db.Column(db.Date, nullable=False)
+#     final_plantio = db.Column(db.Date, nullable=False)
+#     final_colheita = db.Column(db.Date, nullable=False)
+#     inicio_colheita = db.Column(db.Date, nullable=False)
+#     data_liberacao = db.Column(db.Date, nullable=False)
+#     data_vencimento = db.Column(db.Date, nullable=False)
+#     idciclo = db.Column(db.Integer, db.ForeignKey('ciclo_producao.idciclo'))
+#     idteste = db.Column(
+#         db.Integer, db.ForeignKey('empreendimento.idteste'))
+#     idClima = db.Column(db.Integer, db.ForeignKey('clima.idClima'))
+#     idEvento = db.Column(db.Integer, db.ForeignKey('evento_climatico.idEvento'))
+#     idgrao = db.Column(db.Integer, db.ForeignKey('grao.idgrao'))
+#     idSolo = db.Column(db.Integer, db.ForeignKey('solo.idSolo'))
+#     idirrigacao = db.Column(db.Integer, db.ForeignKey('irrigacao.idirrigacao'))
+#     idempreendimento = db.Column(
+#         db.Integer, db.ForeignKey('empreendimento.idempreendimento'))
+#     glebas = db.relationship('glebas', backref='operacao_credito_estadual')
+
+#     table_args = (
+#         db.PrimaryKeyConstraint('ref_bacen', 'nu_ordem'),
+#     )
+
+
+# class glebas(db.Model):
+#     idgleba = db.Column(db.Integer, primary_key=True,
+#                         nullable=False,  autoincrement=False)
+#     coordenadas = db.Column(
+#         Geography(geometry_type='POINT', srid=4326), nullable=False)
+#     altitude = db.Column(db.Double)
+#     nu_ponto = db.Column(db.Integer, nullable=False)
+#     ref_bacen = db.Column(db.Integer, db.ForeignKey(
+#         'operacao_credito_estadual.ref_bacen'))
+#     nu_ordem = db.Column(db.Integer, db.ForeignKey(
+#         'operacao_credito_estadual.nu_ordem'))
+
+
+# class empreendimento(db.Model):
+#     idteste = db.Column(db.Integer, primary_key=True, nullable=False)
+#     idempreendimento = db.Column(db.BigInteger, nullable=False)
+#     finalidade = db.Column(db.String(255))
+#     cesta = db.Column(db.String(255), nullable=False)
+#     modalidade = db.Column(db.String(255), nullable=False)
+#     idproduto = db.Column(db.Integer, db.ForeignKey(
+#         'produtos.idproduto'), nullable=False)
+    
+# class cooperados(db.Model):
+#      ref_bacen = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
+#      nu_ordem = db.Column(db.Integer, primary_key=True,unique=True, nullable=False,  autoincrement=False)
+#      valor_parcela = db.Column(db.Double)
+#      cpf = db.Column(db.String(255))
 class aceitacao_usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     id_user = db.Column(db.Integer, db.ForeignKey('user.id')) 
@@ -162,7 +257,78 @@ def login(email_in=None, senha_in=None):
 #     # Feche a conexão com o MongoDB
 #     client.close()
 
+def mongo_connection():
+    uri = "mongodb+srv://phantom:<password>@cluster0.yxkoek8.mongodb.net/?retryWrites=true&w=majority"
+    client = MongoClient(uri)
 
+    # Nome da coleção
+    collection = client.GeoForesight.NewUser
+
+    return collection
+
+def generate_random_email():
+    # Gerar uma string aleatória de comprimento 8
+    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+    # Concatenar a string aleatória com um domínio de e-mail fictício
+    email = f"{random_string}@excluido.com"
+    return email
+
+
+@app.route('/usuario/atualizar/<int:id>', methods=['POST'])
+def atualizar_usuario(id):
+    data = request.get_json()
+
+    # Recuperar o usuário pelo ID
+    usuario = user.query.get(id)
+
+    if usuario:
+        # Atualizar os campos desejados
+        usuario.nome = "****"
+        usuario.email = generate_random_email()
+        usuario.senha = "******"
+        usuario.telefone = '********'
+
+        try:
+            db.session.commit()
+            login_mongo(usuario.id),
+            return jsonify({'mensagem': 'Dados salvos no MongoDB com sucesso!'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'erro': 'Falha ao atualizar o usuário.'}), 500
+    else:
+        return jsonify({'erro': 'Usuário não encontrado.'}), 404
+
+
+
+
+def login_mongo(user_id):
+    try:
+        # Função para salvar o ID e a data no MongoDB
+        collection = mongo_connection()
+
+        # Verificar se o usuário existe
+        usuario = user.query.get(user_id)
+
+        if usuario:
+            # Inserindo apenas a data e o id_user no MongoDB
+            user_data = {
+                '_id': ObjectId(),
+                'id_user': usuario.id,
+                'data': datetime.now()
+            }
+
+            # Inserindo os dados no MongoDB
+            collection.insert_one(user_data)
+
+            # Fechar a conexão com o MongoDB (opcional dependendo da sua lógica de aplicação)
+            # client.close()
+
+            return jsonify({'mensagem': 'Dados salvos no MongoDB com sucesso!'}), 200
+        else:
+            return jsonify({'erro': 'Usuário não encontrado.'}), 404
+
+    except Exception as e:
+        return jsonify({'erro': f'Erro ao inserir dados no MongoDB: {str(e)}'}), 500
 
 #############################
 ###### General Routes #######
@@ -213,17 +379,6 @@ def update_user_info():
     db.session.commit()
 
     return jsonify({'mensagem': 'Informações atualizadas com sucesso!'}), 200
-
-
-@app.route('/create_tipo_termos', methods=['POST'])
-def create_tipo_termos():
-    dados = request.get_json()
-    tipo_desc = dados.get('tipo_desc')
-    new_tipo_termo = tipo_termos( tipo_desc=tipo_desc)
-    db.session.add(new_tipo_termo)
-    db.session.commit()
-
-    return jsonify({'message': 'tipo termo criado com sucesso!'}), 201
 
 
 @app.route('/create_tipo_termos', methods=['POST'])
