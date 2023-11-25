@@ -853,7 +853,7 @@ def consulta_nova():
     try:
 
         query = ''' SELECT distinct * from 
-                public.vw_predicoes
+                public.vw_previsoes
                     WHERE 1=1
                 '''
 
