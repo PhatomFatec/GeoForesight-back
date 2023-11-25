@@ -6,7 +6,6 @@ import requests
 import bcrypt
 import json
 import os
-
 from sqlalchemy import TEXT,DateTime, func
 from sqlalchemy import create_engine, text
 from flask import Flask, jsonify, request
@@ -40,8 +39,7 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
 # Configurações do banco de dados PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'string de conexão'
-
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('url_heroku')
 db = SQLAlchemy(app)
 
 
@@ -124,14 +122,15 @@ class user(db.Model):
 class tipo_termos(db.Model):
     id_tipo = db.Column(db.Integer, primary_key=True, autoincrement=True)
     tipo_desc = db.Column(db.String(255), nullable=False) 
-    termos_rel = db.relationship('termos', backref='tipo_termos', lazy=True)
+   
+    id_termo = db.Column(db.Integer, db.ForeignKey('termos.id'))
     
 class termos(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     data = db.Column(DateTime, default=datetime.utcnow, nullable=False)  
     termo = db.Column(TEXT, unique=True, nullable=False)
     
-    id_tipo = db.Column(db.Integer, db.ForeignKey('tipo_termos.id_tipo'))
+    termos_rel = db.relationship('tipo_termos', backref='termos', lazy=True)
     rel_ace_user = db.relationship('aceitacao_usuario', backref='termos', lazy=True)
 
 
@@ -385,7 +384,8 @@ def update_user_info():
 def create_tipo_termos():
     dados = request.get_json()
     tipo_desc = dados.get('tipo_desc')
-    new_tipo_termo = tipo_termos( tipo_desc=tipo_desc)
+    id_termo = dados.get()
+    new_tipo_termo = tipo_termos( tipo_desc=tipo_desc, id_termo = id_termo)
     db.session.add(new_tipo_termo)
     db.session.commit()
 
@@ -395,11 +395,10 @@ def create_tipo_termos():
 @app.route('/create_termos', methods=['POST'])
 def create_termos():
     dados = request.get_json()
-    id_tipo = dados.get('id_tipo')
     data = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
     termo = dados.get('termo')
 
-    new_termo = termos(data=data, termo=termo, id_tipo=id_tipo)
+    new_termo = termos(data=data, termo=termo)
     db.session.add(new_termo)
     db.session.commit()
 
@@ -433,44 +432,39 @@ def aceitar_termo():
 
 
 @app.route('/termo_mais_recente', methods=['GET'])
-def termo_mais_recente():
-    subquery = db.session.query(
-        termos.id_tipo,
-        func.max(termos.data).label('max_data')
-    ).group_by(termos.id_tipo).subquery()
+def buscar_termo():
+    tipo_alvo = 3
 
-    query = db.session.query(termos).join(
-        subquery,
-        (termos.id_tipo == subquery.c.id_tipo) &
-        (termos.data == subquery.c.max_data)
-    )
+    termo_mais_recente = db.session.query(func.max(termos.data).label('max_data'), termos.id, termos.termo, tipo_termos.tipo_desc)\
+        .join(tipo_termos, termos.id == tipo_termos.id_termo)\
+        .filter(tipo_termos.id_tipo == tipo_alvo)\
+        .group_by(termos.termo, tipo_termos.tipo_desc, termos.id)\
+        .order_by(func.max(termos.data).desc())\
+        .first()
 
-    resultados = query.all()
-
-    if resultados:
-        termos_mais_recentes = []
-        for resultado in resultados:
-            termos_mais_recentes.append({
-                'id': resultado.id,
-                'data': resultado.data.strftime('%Y-%m-%d'),
-                'id_tipo': resultado.id_tipo,
-                'termo': resultado.termo
-            })
-
-        return jsonify(termos_mais_recentes), 200
+    if termo_mais_recente is not None:
+        termo_info = {
+            'id': termo_mais_recente.id,
+            'data': termo_mais_recente.max_data,
+            'termo': termo_mais_recente.termo,
+            'tipo_desc': termo_mais_recente.tipo_desc
+        }
+        return jsonify(termo_info)
     else:
-        return jsonify({'message': 'Nenhum termo encontrado'}), 404
-    
+        return jsonify({'mensagem': 'Nenhum termo encontrado para o tipo de termo "{}"'.format(tipo_alvo)}), 404
 
+    
 @app.route('/verificar_aceitacao', methods=['GET'])
 @jwt_required()
 def verificar_aceitacao():
     current_user = get_jwt_identity()
 
     query = text(f"""
-        SELECT id_user, au.id_termo , data_aceitacao, au.aceite
-            FROM aceitacao_usuario AS au
-            join public.user as u on u.id = au.id_user 
+         SELECT id_user, au.id_termo, tt.id_tipo, tt.tipo_desc ,data_aceitacao, au.aceite
+FROM aceitacao_usuario AS au
+join public.user as u on u.id = au.id_user 
+JOIN termos AS t ON t.id = au.id_termo
+JOIN tipo_termos AS tt ON tt.id_tipo = tt.id_tipo
             WHERE au.aceite = True
             AND au.data_aceitacao = ( SELECT MAX(data_aceitacao)
             FROM aceitacao_usuario
@@ -485,8 +479,10 @@ def verificar_aceitacao():
         termos_aceitos.append({
             'id_user': row[0],
             'id_termo': row[1],
-            'data_aceitacao': row[2].isoformat(),
-            'aceite': row[3]
+            'id_tipo': row[2],
+            'tipo_desc': row[3],
+            'data_aceitacao': row[4].isoformat(),
+            'aceite': row[5]
         })
     print(termos_aceitos)
 
@@ -503,9 +499,9 @@ def aceitou_email():
 
     query = text("""  SELECT id_user, au.id_termo, tt.tipo_desc, data_aceitacao, au.aceite
         FROM aceitacao_usuario AS au
-        JOIN public.user AS u ON u.id = au.id_user
+        join public.user as u on u.id = au.id_user 
         JOIN termos AS t ON t.id = au.id_termo
-        JOIN tipo_termos AS tt ON tt.id_tipo = t.id_tipo
+        JOIN tipo_termos AS tt ON tt.id_tipo = tt.id_tipo
         WHERE au.id_user = :current_user
         AND au.aceite = true
         AND tt.tipo_desc LIKE '%Email%'
@@ -531,18 +527,21 @@ def aceitou_envio_whatsapp():
     current_user = get_jwt_identity()
 
     query = text("""
-        SELECT id_user, au.id_termo, tt.tipo_desc, data_aceitacao, au.aceite, u.telefone
-        FROM aceitacao_usuario AS au
-        JOIN public.user AS u ON u.id = au.id_user
-        JOIN termos AS t ON t.id = au.id_termo
-        JOIN tipo_termos AS tt ON tt.id_tipo = t.id_tipo
-        WHERE au.id_user = :current_user
-        AND au.aceite = true
-        AND tt.tipo_desc LIKE '%WhatsApp%'
-        AND au.data_aceitacao = (
-            SELECT MAX(data_aceitacao)
-            FROM aceitacao_usuario
-            WHERE id_user = au.id_user
+        SELECT id_user, au.id_termo ,tt.tipo_desc , data_aceitacao, au.aceite, u.telefone 
+                FROM aceitacao_usuario AS au
+                join public.user as u on u.id = au.id_user 
+                JOIN termos AS t ON t.id = au.id_termo
+                JOIN tipo_termos AS tt ON tt.id_tipo = tt.id_tipo
+      
+                WHERE au.aceite = true
+                AND tt.tipo_desc like '%Whats%'
+                AND au.data_aceitacao = (
+                    SELECT
+                        MAX(data_aceitacao)
+                    FROM
+                        aceitacao_usuario
+                    WHERE
+                        id_user = au.id_user
         );
     """)
 
@@ -558,21 +557,19 @@ def aceitou_envio_whatsapp():
 def enviar_emails():
     with db.engine.connect() as connection:
             query = text('''
-                SELECT id_user, au.id_termo ,tt.tipo_desc , data_aceitacao, au.aceite, u.email 
-                FROM aceitacao_usuario AS au
-                join public.user as u on u.id = au.id_user 
-                join termos as t on t.id = au.id_termo 
-                join tipo_termos as tt on tt.id_tipo = t.id_tipo 
-                WHERE au.aceite = true
-                AND tt.tipo_desc like '%Email%'
-                AND au.data_aceitacao = (
-                    SELECT
-                        MAX(data_aceitacao)
-                    FROM
-                        aceitacao_usuario
-                    WHERE
-                        id_user = au.id_user
-                );
+                SELECT id_user, au.id_termo, tt.tipo_desc, data_aceitacao, au.aceite
+        FROM aceitacao_usuario AS au
+        join public.user as u on u.id = au.id_user 
+        JOIN termos AS t ON t.id = au.id_termo
+        JOIN tipo_termos AS tt ON tt.id_tipo = tt.id_tipo
+        WHERE au.id_user = au.id_user
+        AND au.aceite = true
+        AND tt.tipo_desc LIKE '%Email%'
+        AND au.data_aceitacao = (
+            SELECT MAX(data_aceitacao)
+            FROM aceitacao_usuario
+            WHERE id_user = au.id_user
+        );
             ''')
             aceitacoes = connection.execute(query)
         
@@ -636,8 +633,9 @@ def enviar_whatsapp():
                 SELECT id_user, au.id_termo ,tt.tipo_desc , data_aceitacao, au.aceite, u.telefone 
                 FROM aceitacao_usuario AS au
                 join public.user as u on u.id = au.id_user 
-                join termos as t on t.id = au.id_termo 
-                join tipo_termos as tt on tt.id_tipo = t.id_tipo 
+                JOIN termos AS t ON t.id = au.id_termo
+                JOIN tipo_termos AS tt ON tt.id_tipo = tt.id_tipo
+      
                 WHERE au.aceite = true
                 AND tt.tipo_desc like '%Whats%'
                 AND au.data_aceitacao = (
