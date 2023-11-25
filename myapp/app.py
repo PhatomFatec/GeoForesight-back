@@ -384,7 +384,7 @@ def update_user_info():
 def create_tipo_termos():
     dados = request.get_json()
     tipo_desc = dados.get('tipo_desc')
-    id_termo = dados.get()
+    id_termo = dados.get('id_termo')
     new_tipo_termo = tipo_termos( tipo_desc=tipo_desc, id_termo = id_termo)
     db.session.add(new_tipo_termo)
     db.session.commit()
@@ -430,10 +430,9 @@ def aceitar_termo():
         return jsonify({'message': 'Termo ou usuário não encontrado'}), 404
 
 
-
 @app.route('/termo_mais_recente', methods=['GET'])
 def buscar_termo():
-    tipo_alvo = 3
+    tipo_alvo = 6
 
     termo_mais_recente = db.session.query(func.max(termos.data).label('max_data'), termos.id, termos.termo, tipo_termos.tipo_desc)\
         .join(tipo_termos, termos.id == tipo_termos.id_termo)\
@@ -444,7 +443,7 @@ def buscar_termo():
 
     if termo_mais_recente is not None:
         termo_info = {
-            'id': termo_mais_recente.id,
+            'id_termo': termo_mais_recente.id,
             'data': termo_mais_recente.max_data,
             'termo': termo_mais_recente.termo,
             'tipo_desc': termo_mais_recente.tipo_desc
@@ -497,18 +496,21 @@ JOIN tipo_termos AS tt ON tt.id_tipo = tt.id_tipo
 def aceitou_email():
     current_user = get_jwt_identity()
 
-    query = text("""  SELECT id_user, au.id_termo, tt.tipo_desc, data_aceitacao, au.aceite
-        FROM aceitacao_usuario AS au
-        join public.user as u on u.id = au.id_user 
-        JOIN termos AS t ON t.id = au.id_termo
-        JOIN tipo_termos AS tt ON tt.id_tipo = tt.id_tipo
-        WHERE au.id_user = :current_user
-        AND au.aceite = true
-        AND tt.tipo_desc LIKE '%Email%'
-        AND au.data_aceitacao = (
-            SELECT MAX(data_aceitacao)
-            FROM aceitacao_usuario
-            WHERE id_user = au.id_user
+    query = text("""  SELECT id_user, au.id_termo ,tt.tipo_desc , data_aceitacao, au.aceite, u.telefone 
+                FROM aceitacao_usuario AS au
+                join public.user as u on u.id = au.id_user 
+                JOIN termos AS t ON t.id = au.id_termo
+                JOIN tipo_termos AS tt ON tt.id_tipo = tt.id_tipo
+      
+                WHERE au.aceite = true
+                AND tt.tipo_desc like '%Email%'
+                AND au.data_aceitacao = (
+                    SELECT
+                        MAX(data_aceitacao)
+                    FROM
+                        aceitacao_usuario
+                    WHERE
+                        id_user = au.id_user
         );""")
 
     result = db.session.execute(query, {'current_user': current_user})
