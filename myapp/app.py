@@ -918,7 +918,8 @@ def consulta_nova():
         "municipio": resultado.municipio,
         "produto": resultado.produto,
         "previsao": resultado.previsao,
-        "date": resultado.date
+        "date": resultado.date,
+        "indice": resultado.indice
     }
             lista_resultados.append(resultado_dict)
 
