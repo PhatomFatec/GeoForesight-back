@@ -1,4 +1,4 @@
-from bson import _name_value_to_bson
+from bson import ObjectId
 from geoalchemy2 import Geography
 from dotenv import load_dotenv
 from datetime import datetime
@@ -12,7 +12,6 @@ from sqlalchemy import create_engine, text
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from bson import ObjectId
 import random
 import string
 
@@ -40,7 +39,7 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
 # Configurações do banco de dados PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'string de conexão'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('url_heroku')
 
 db = SQLAlchemy(app)
 
@@ -854,7 +853,7 @@ def consulta_nova():
     try:
 
         query = ''' SELECT distinct * from 
-                public.vw_predicoes
+                public.vw_previsoes
                     WHERE 1=1
                 '''
 
