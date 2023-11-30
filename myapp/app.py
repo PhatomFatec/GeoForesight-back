@@ -1,6 +1,9 @@
+import signal
+import sys
 from bson import _name_value_to_bson
+from flask.cli import with_appcontext
 from geoalchemy2 import Geography
-from dotenv import load_dotenv
+##from dotenv import load_dotenv
 from datetime import datetime
 import requests
 import bcrypt
@@ -15,7 +18,9 @@ from flask_cors import CORS
 from bson import ObjectId
 import random
 import string
-
+import psycopg2
+from pymongo import MongoClient
+from subprocess import run
 from email.message import EmailMessage
 import smtplib
 
@@ -23,7 +28,7 @@ from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, get_jwt_identity
 )
 
-load_dotenv()
+#load_dotenv()
 
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
@@ -40,8 +45,7 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
 # Configurações do banco de dados PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'string de conexão'
-
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('url_heroku')
 db = SQLAlchemy(app)
 
 
@@ -258,13 +262,26 @@ def login(email_in=None, senha_in=None):
 #     client.close()
 
 def mongo_connection():
-    uri = "mongodb+srv://phantom:<password>@cluster0.yxkoek8.mongodb.net/?retryWrites=true&w=majority"
+    # Modifique 'localhost' e '27017' conforme necessário para o seu servidor local MongoDB
+    host = "localhost"
+    port = 27017
+    
+    # Substitua 'seu_banco_de_dados' e 'NewUser' pelos valores desejados
+    database_name = "teste"
+    collection_name = "NewUser"
+    
+    # Crie a URI de conexão usando os parâmetros fornecidos
+    uri = f"mongodb://{host}:{port}/{database_name}"
+    
+    # Conecte-se ao MongoDB
     client = MongoClient(uri)
 
-    # Nome da coleção
-    collection = client.GeoForesight.NewUser
+    # Acesse o banco de dados e a coleção
+    db = client[database_name]
+    collection = db[collection_name]
 
     return collection
+
 
 def generate_random_email():
     # Gerar uma string aleatória de comprimento 8
@@ -276,7 +293,6 @@ def generate_random_email():
 
 @app.route('/usuario/atualizar/<int:id>', methods=['POST'])
 def atualizar_usuario(id):
-    data = request.get_json()
 
     # Recuperar o usuário pelo ID
     usuario = user.query.get(id)
@@ -288,10 +304,10 @@ def atualizar_usuario(id):
         usuario.senha = "******"
         usuario.telefone = '********'
 
-        try:
+        try:    
             db.session.commit()
-            login_mongo(usuario.id),
-            return jsonify({'mensagem': 'Dados salvos no MongoDB com sucesso!'}), 200
+            login_mongo(usuario.id)
+            return jsonify({'mensagem': 'Dados excluídos com sucesso!'}), 200
         except Exception as e:
             db.session.rollback()
             return jsonify({'erro': 'Falha ao atualizar o usuário.'}), 500
@@ -679,23 +695,13 @@ def enviar_whatsapp():
     
     return jsonify({'message': 'Mensagens enviadas com sucesso'}), 201
 
-
-
-
-
 # # nova consulta
-@app.route('/consultaTeste/', methods=['POST'])
+@app.route('/consultaglebas/', methods=['POST'])
 @jwt_required()
 def consulta_teste():
     current_user = get_jwt_identity()
     data = request.json
-
-    # adicionar os seguintes campos no filtro da query dinamica:
-    # Solo ok
-    # Clima ok
-    # Ciclo do cultivo
-    # Estado
-
+    
     print(data)
     try:
 
@@ -892,7 +898,6 @@ def consulta_nova():
         query2 = ' order by date ASC'
         
         engine = create_engine(os.getenv('url_heroku'))
-
         conn = engine.connect()
 
         # Executar a query
@@ -933,6 +938,42 @@ def consulta_nova():
 
         return jsonify({'error': 'Ocorreu um erro no processamento da solicitação.'}), 500
     
+
+def realizar_backup():
+    run(['myapp/backup.ps1'])
+
+
+
+def comparar_e_atualizar():
+    # Configurações de conexão com o PostgreSQL
+
+    query = ''' SELECT * from 
+                    public.user
+                '''
+                
+    engine = create_engine(os.getenv('url_heroku'))
+    conn = engine.connect()
+
+    resultados = conn.execute(text(query)).fetchall()
+    print(resultados)
+    # Configurações de conexão com o MongoDB
+    collection = mongo_connection()
+
+
+    ids_postgres = [int(row[0]) for row in resultados]
+
+    for id_postgres in ids_postgres:
+        documento_mongo = collection.find_one({'id_user': id_postgres})
+
+        if documento_mongo:
+            atualizar_usuario(id_postgres)
+
+
+    conn.close()
+
+@app.before_first_request
+def rodar_apos_inicializar():
+    comparar_e_atualizar()
 # main
 if __name__ == '__main__':
     app.run(debug=True)
